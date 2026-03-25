@@ -1,0 +1,33 @@
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+kayden_padayachee@Sambe2025018:~$ touch kaydenPractice.txt
+kayden_padayachee@Sambe2025018:~$ echo "Hello World" > kaydenPractice.txt
+kayden_padayachee@Sambe2025018:~$ cat kaydenPractice.txt
+Hello World
+kayden_padayachee@Sambe2025018:~$ nano kaydenPractice.txt
+kayden_padayachee@Sambe2025018:~$ cat kaydenPractice.txt
+hello World
+kayden_padayachee@Sambe2025018:~$ echo "I like LInux" >> filename.txt
+kayden_padayachee@Sambe2025018:~$ cat kaydenPractice.txt
+hello World
+kayden_padayachee@Sambe2025018:~$ echo "I like LInux" >> kaydenPractice.txt
+kayden_padayachee@Sambe2025018:~$ cat kaydenPractice.txt
+hello World
+I like LInux
+kayden_padayachee@Sambe2025018:~$ mkdir KaydenLinux
+kayden_padayachee@Sambe2025018:~$ ls
+KaydenLinux  filename.txt  kaydenPractice.txt
+kayden_padayachee@Sambe2025018:~$ cd KaydenLinux
+kayden_padayachee@Sambe2025018:~/KaydenLinux$ mv kaydenPractice.txt KaydenLinux
+mv: cannot stat 'kaydenPractice.txt': No such file or directory
+kayden_padayachee@Sambe2025018:~/KaydenLinux$ mv kaydenPractice.txt KaydenLinux
+mv: cannot stat 'kaydenPractice.txt': No such file or directory
+kayden_padayachee@Sambe2025018:~/KaydenLinux$ mv ../kaydenPractice.txt .
+kayden_padayachee@Sambe2025018:~/KaydenLinux$ cat KaydenLinux
+cat: KaydenLinux: No such file or directory
+kayden_padayachee@Sambe2025018:~/KaydenLinux$ ls
+kaydenPractice.txt
+kayden_padayachee@Sambe2025018:~/KaydenLinux$ rm kaydenPractice.txt
+kayden_padayachee@Sambe2025018:~/KaydenLinux$ ls
+kayden_padayachee@Sambe2025018:~/KaydenLinux$
