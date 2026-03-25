@@ -1,0 +1,21 @@
+
+
+# Find files by name (search recursively)
+kayden_padayachee@Sambe2025018:~$ find . -name "file.txt"
+kayden_padayachee@Sambe2025018:~$ find /home/kayden_padayachee@Sambe2025018 -name "file.txt"
+
+# Find directories by name
+kayden_padayachee@Sambe2025018:~$ find . -type d -name "Projects"
+
+# Find files by type
+kayden_padayachee@Sambe2025018:~$ find . -type f -name "*.txt"
+
+# Locate command (search using database)
+kayden_padayachee@Sambe2025018:~$ locate file.txt
+kayden_padayachee@Sambe2025018:~$ locate "*.log"
+
+# Search content inside files
+kayden_padayachee@Sambe2025018:~$ grep "search_text" file.txt
+kayden_padayachee@Sambe2025018:~$ grep -r "search_text" /home/kayden_padayachee@Sambe2025018
+kayden_padayachee@Sambe2025018:~$ grep -i "search_text" *.txt # case-insensitive search
+kayden_padayachee@Sambe2025018:~$ grep -n "search_text" file.txt # show line numbers
