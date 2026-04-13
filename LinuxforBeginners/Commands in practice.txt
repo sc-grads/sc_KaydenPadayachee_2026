@@ -1,0 +1,89 @@
+Navigation
+kayden_padayachee@Sambe2025018~$ pwd
+kayden_padayachee@Sambe2025018~$ cd Projects
+kayden_padayachee@Sambe2025018~Projects$ cd ..
+kayden_padayachee@Sambe2025018~Projects$ cd ~
+kayden_padayachee@Sambe2025018~Projects$ cd -
+kayden_padayachee@Sambe2025018~$ ls
+kayden_padayachee@Sambe2025018~$ ls -l
+kayden_padayachee@Sambe2025018~$ ls -a
+kayden_padayachee@Sambe2025018~$ ls -la
+kayden_padayachee@Sambe2025018~$ ls -F
+kayden_padayachee@Sambe2025018~$ ls -h
+kayden_padayachee@Sambe2025018~$ ls -R
+kayden_padayachee@Sambe2025018~$ ls -t
+kayden_padayachee@Sambe2025018~$ ls -S
+kayden_padayachee@Sambe2025018~$ ls -r
+kayden_padayachee@Sambe2025018~$ ls --color
+kayden_padayachee@Sambe2025018~$ ls --help
+
+# Directory & File Management
+kayden_padayachee@Sambe2025018~$ mkdir new_folder
+kayden_padayachee@Sambe2025018~$ mkdir -p foldersubfolder
+kayden_padayachee@Sambe2025018~$ rmdir empty_folder
+kayden_padayachee@Sambe2025018~$ rm -r folder_to_delete
+kayden_padayachee@Sambe2025018~$ touch file.txt
+kayden_padayachee@Sambe2025018~$ touch file1.txt file2.txt
+kayden_padayachee@Sambe2025018~$ rm file.txt
+kayden_padayachee@Sambe2025018~$ cp file.txt backup.txt
+kayden_padayachee@Sambe2025018~$ mv file.txt new_file.txt
+
+# Viewing & Editing Files
+kayden_padayachee@Sambe2025018~$ cat file.txt
+kayden_padayachee@Sambe2025018~$ cat file1.txt file2.txt
+kayden_padayachee@Sambe2025018~$ cat file1.txt file2.txt  combined.txt
+kayden_padayachee@Sambe2025018~$ cat  newfile.txt
+kayden_padayachee@Sambe2025018~$ cat  file.txt
+kayden_padayachee@Sambe2025018~$ cat -n file.txt
+kayden_padayachee@Sambe2025018~$ head file.txt
+kayden_padayachee@Sambe2025018~$ head -n 5 file.txt
+kayden_padayachee@Sambe2025018~$ tail file.txt
+kayden_padayachee@Sambe2025018~$ tail -f file.txt
+kayden_padayachee@Sambe2025018~$ less file.txt
+kayden_padayachee@Sambe2025018~$ nano file.txt
+kayden_padayachee@Sambe2025018~$ vi file.txt
+
+# Help & Manuals
+kayden_padayachee@Sambe2025018~$ man ls
+kayden_padayachee@Sambe2025018~$ man cat
+kayden_padayachee@Sambe2025018~$ man pwd
+kayden_padayachee@Sambe2025018~$ [command] --help
+
+# Output  Printing
+kayden_padayachee@Sambe2025018~$ echo Hello World
+kayden_padayachee@Sambe2025018~$ echo $HOME
+kayden_padayachee@Sambe2025018~$ echo $PATH
+
+# Environment & System Info also extras
+kayden_padayachee@Sambe2025018~$ whoami
+kayden_padayachee@Sambe2025018~$ env
+kayden_padayachee@Sambe2025018~$ uname -a
+
+# Permissions
+kayden_padayachee@Sambe2025018~$ chmod 755 file.txt
+kayden_padayachee@Sambe2025018~$ chown usergroup file.txt
+kayden_padayachee@Sambe2025018~$ ls -l
+
+# Networking
+kayden_padayachee@Sambe2025018~$ ping httpgoogle.com 
+kayden_padayachee@Sambe2025018~$ ifconfig
+kayden_padayachee@Sambe2025018~$ ip addr
+kayden_padayachee@Sambe2025018~$ wget httpexample.comfile.txt
+kayden_padayachee@Sambe2025018~$ curl httpexample.com 
+
+# Process Management
+kayden_padayachee@Sambe2025018~$ ps
+kayden_padayachee@Sambe2025018~$ top
+kayden_padayachee@Sambe2025018~$ kill 1234
+kayden_padayachee@Sambe2025018~$ killall process_name
+
+# Package Management (UbuntuDebian)
+kayden_padayachee@Sambe2025018~$ sudo apt update
+kayden_padayachee@Sambe2025018~$ sudo apt upgrade
+kayden_padayachee@Sambe2025018~$ sudo apt install package_name
+kayden_padayachee@Sambe2025018~$ sudo apt remove package_name
+
+# Miscellaneous
+kayden_padayachee@Sambe2025018~$ history
+kayden_padayachee@Sambe2025018~$ clear
+kayden_padayachee@Sambe2025018~$ exit
