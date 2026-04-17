@@ -1,0 +1,10 @@
+timestamp,step,status,details
+2026-04-17 09:54:17,start,success,Loading data from /mnt/c/Users/kpada/OneDrive - ADvTECH Ltd/Desktop/sc_KaydenPadayachee_2026/First Project/project/data/Messy_Sales_Data.csv
+2026-04-17 09:54:17,load data,success,52 rows loaded
+2026-04-17 09:54:17,removing duplicates,success,2 removed
+2026-04-17 09:54:17,quantity cleaning,success,All missing quantities filled using rounded product averages
+2026-04-17 09:54:17,cleaned data,success,
+2026-04-17 09:54:17,date cleaning,success,0 invalid dates removed
+2026-04-17 09:54:17,features,success,
+2026-04-17 09:54:17,clean file saved,success,/mnt/c/Users/kpada/OneDrive - ADvTECH Ltd/Desktop/sc_KaydenPadayachee_2026/First Project/project/output/clean_sales.csv
+2026-04-17 09:54:18,aggregation phase,success,All reports created

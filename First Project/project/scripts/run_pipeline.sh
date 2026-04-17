@@ -1,10 +1,11 @@
-echo "STARTING PIPELINE"
+echo "Starting the pipeline"
 
 cd "$(dirname "$0")/.." || exit 1
 
 echo "Project directory: $(pwd)"
 echo ""
 
+#So the reason i added this line was because if i forgot to enter the venv environment this will automatically turn it on
 if [ -d "venv" ]; then
     echo "Activating virtual environment..."
     source venv/bin/activate
@@ -15,49 +16,49 @@ echo "Running process_data.py..."
 python3 scripts/process_data.py
 
 echo ""
-echo "CHECKING OUTPUT FILES"
+echo "checking files"
 
 SUCCESS=true
 
 if [ -f "output/clean_sales.csv" ]; then
-    echo "FOUND clean_sales.csv"
+    echo "Created clean_sales.csv"
 else
-    echo "MISSING clean_sales.csv"
+    echo "missing clean_sales.csv"
     SUCCESS=false
 fi 
 
 if [ -f "output/sales_by_region.csv" ]; then
-    echo "FOUND sales_by_region.csv"
+    echo "Created sales_by_region.csv"
 else
-    echo "MISSING sales_by_region.csv"
+    echo "missing sales_by_region.csv"
     SUCCESS=false
 fi
 
 if [ -f "output/sales_by_product.csv" ]; then
-    echo "FOUND sales_by_product.csv"
+    echo "Created sales_by_product.csv"
 else
-    echo "MISSING sales_by_product.csv"
+    echo "missing sales_by_product.csv"
     SUCCESS=false
 fi
 
 if [ -f "output/monthly_revenue.csv" ]; then
-    echo "FOUND monthly_revenue.csv"
+    echo "Created monthly_revenue.csv"
 else
-    echo "MISSING monthly_revenue.csv"
+    echo "missing monthly_revenue.csv"
     SUCCESS=false
 fi
 
 if [ -f "output/salesperson_performance.csv" ]; then
-    echo "FOUND salesperson_performance.csv"
+    echo "Created salesperson_performance.csv"
 else
-    echo "MISSING salesperson_performance.csv"
+    echo "missing salesperson_performance.csv"
     SUCCESS=false
 fi
 
 echo ""
 
 if $SUCCESS; then
-    echo "PIPELINE SUCCESSFUL"
+    echo "The pipeline was completed successfully"
 else
-    echo "PIPELINE INCOMPLETE"
+    echo "Something happened, check pipeline or logs to find out more"
 fi
