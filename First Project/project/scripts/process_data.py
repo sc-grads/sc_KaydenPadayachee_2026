@@ -74,7 +74,7 @@ else:
 # ensure integers
 df["quantity"] = df["quantity"].astype(int)
 
-# -------------------------------
+
 
 # clean price
 df["price"] = pd.to_numeric(df["price"], errors="coerce").fillna(0)
