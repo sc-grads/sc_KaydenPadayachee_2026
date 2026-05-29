@@ -1,5 +1,5 @@
 select E.EmployeeNumber as ENumber, E.EmployeeFirstName,
-       E.EmployeeLastName, T.EmployeeNumber as TNumber, 
+       E.EmployeeLastName, T.[EmployeeNumber] as TNumber, 
        sum(T.Amount) as TotalAmount
 from tblEmployee as E
 left join tblTransaction as T
