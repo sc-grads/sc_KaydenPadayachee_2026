@@ -1,4 +1,4 @@
-alter TRIGGER tr_ViewByDepartment
+Create TRIGGER tr_ViewByDepartment
 ON dbo.ViewByDepartment
 INSTEAD OF DELETE
 AS
