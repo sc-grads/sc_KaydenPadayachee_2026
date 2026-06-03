@@ -17,3 +17,4 @@ where T.EmployeeNumber is null
 order by U.RowNumber
 
 select row_number() over(order by(select null)) from sys.objects O cross join sys.objects P
+

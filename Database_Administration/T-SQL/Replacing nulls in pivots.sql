@@ -12,6 +12,6 @@ select TheYear, isnull([1],0) as [1],
 				isnull([9],0) as [9],
 				isnull([10],0) as [10],
 				isnull([11],0) as [11],
-				isnull([12],0) as [12] from myTable
+				isnull([12],0) as [12] into tblPivot from myTable
 PIVOT (sum(Amount) for TheMonth in ([1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12])) as myPvt
 ORDER BY TheYear 
