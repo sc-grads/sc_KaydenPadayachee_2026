@@ -3,7 +3,10 @@ name: GitHub-MS Teams Events Integration
 on:
   push:
   pull_request:
+    types: [opened, closed]
   create:
+  pull_request_review:
+    types: [submitted]
  
 jobs:
   notify-teams:
@@ -13,15 +16,25 @@ jobs:
       - name: Send message to MS Teams
         run: |
           EVENT_NAME="${{ github.event_name }}"
+          EVENT_ACTION="${{ github.event.action }}"
  
           if [ "$EVENT_NAME" = "push" ]; then
-            MESSAGE=" Push event in ${{ github.repository }} by ${{ github.actor }}.\n\nCommit: ${{ github.event.head_commit.message }}\n ${{ github.event.head_commit.url }}"
-         
-          elif [ "$EVENT_NAME" = "pull_request" ]; then
-            MESSAGE=" Pull Request event in ${{ github.repository }} by ${{ github.actor }}.\n\nTitle: ${{ github.event.pull_request.title }}\n ${{ github.event.pull_request.html_url }}"
-         
+            MESSAGE="**Push event** in ${{ github.repository }} by ${{ github.actor }}.\n\nCommit: ${{ github.event.head_commit.message }}\n${{ github.event.head_commit.url }}"
+ 
+          elif [ "$EVENT_NAME" = "pull_request" ] && [ "$EVENT_ACTION" = "opened" ]; then
+            MESSAGE="** Approval required**: Pull Request #${{ github.event.pull_request.number }} opened in ${{ github.repository }} by ${{ github.actor }}.\n\nTitle: ${{ github.event.pull_request.title }}\nAssigned reviewer(s): ${{ join(github.event.pull_request.requested_reviewers.*.login, ', ') }}\n${{ github.event.pull_request.html_url }}"
+ 
+          elif [ "$EVENT_NAME" = "pull_request_review" ]; then
+            MESSAGE="** Review update**: Pull Request #${{ github.event.pull_request.number }} reviewed in ${{ github.repository }} by ${{ github.actor }}.\n\nDecision: ${{ github.event.review.state }}\n${{ github.event.pull_request.html_url }}"
+ 
+          elif [ "$EVENT_NAME" = "pull_request" ] && [ "$EVENT_ACTION" = "closed" ]; then
+            MESSAGE="** Merge complete**: Pull Request #${{ github.event.pull_request.number }} merged into main in ${{ github.repository }} by ${{ github.actor }}.\n${{ github.event.pull_request.html_url }}"
+ 
+          elif [ "$EVENT_NAME" = "create" ]; then
+            MESSAGE="**Branch created**: ${{ github.ref }} in ${{ github.repository }} by ${{ github.actor }}.\nThis branch is now available for new work.\n${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref }}"
+ 
           else
-            MESSAGE="Create event in ${{ github.repository }} by ${{ github.actor }}.\nRef: ${{ github.ref }}"
+            MESSAGE="**Other event** in ${{ github.repository }} by ${{ github.actor }}.\nRef: ${{ github.ref }}"
           fi
  
           curl -H "Content-Type: application/json" \
