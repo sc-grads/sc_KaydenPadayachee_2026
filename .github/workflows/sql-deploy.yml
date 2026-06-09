@@ -1,18 +1,72 @@
-- name: Run SQL Init Script
-
-  env:
-
-    SERVER: ${{ secrets.SQL_SERVER }}
-
-    PORT: ${{ secrets.SQL_PORT }}
-
-    USER: ${{ secrets.SQL_USER }}
-
-    PASSWORD: ${{ secrets.SQL_PASSWORD }}
+name: SQL Deployment with Runner
  
-  run: |
+on:
 
-    echo "Starting SQL execution..."
+  workflow_dispatch:
  
-    /opt/mssql-tools/bin/sqlcmd -S "${SERVER},${PORT}" -U "${USER}" -P "${PASSWORD}" -i ./database/init.sql
+jobs:
+
+  deploy:
+
+    runs-on: ubuntu-latest   # <-- THIS IS YOUR RUNNER
+ 
+    steps:
+
+      # 1. Pull your repo onto the runner
+
+      - name: Checkout Repo
+
+        uses: actions/checkout@v3
+ 
+      # 2. Debug: confirm files exist
+
+      - name: Debug - List Repo Files
+
+        run: |
+
+          echo "Current directory:"
+
+          pwd
+
+          echo "Repo contents:"
+
+          ls -R
+ 
+      # 3. Install SQL tools on runner
+
+      - name: Install SQLCMD
+
+        run: |
+
+          sudo apt-get update
+
+          sudo apt-get install -y mssql-tools unixodbc-dev
+ 
+      # 4. Run SQL script via Pinggy tunnel
+
+      - name: Execute SQL Script
+
+        env:
+
+          SERVER: ${{ secrets.SQL_SERVER }}
+
+          PORT: ${{ secrets.SQL_PORT }}
+
+          USER: ${{ secrets.DB_USER }}
+
+          PASSWORD: ${{ secrets.DB_PASSWORD }}
+ 
+        run: |
+
+          echo "Starting SQL execution..."
+ 
+          /opt/mssql-tools/bin/sqlcmd \
+
+          -S "${SERVER},${PORT}" \
+
+          -U "${USER}" \
+
+          -P "${PASSWORD}" \
+
+          -i ./database/init.sql
  
