@@ -1,0 +1,62 @@
+- name: Create DB + Seed Data
+
+  env:
+
+    SERVER: ${{ secrets.SQL_SERVER }}
+
+    PORT: ${{ secrets.SQL_PORT }}
+
+    USER: ${{ secrets.SQL_USER }}
+
+    PASSWORD: ${{ secrets.SQL_PASSWORD }}
+ 
+  run: |
+
+    /opt/mssql-tools/bin/sqlcmd \
+
+    -S $SERVER,$PORT \
+
+    -U $USER \
+
+    -P $PASSWORD \
+
+    -Q "
+
+    IF DB_ID('GitHubTestDB') IS NULL
+
+      CREATE DATABASE DBCloudTunnelingKP;
+
+    "
+ 
+    /opt/mssql-tools/bin/sqlcmd \
+
+    -S $SERVER,$PORT \
+
+    -U $USER \
+
+    -P $PASSWORD \
+
+    -d GitHubTestDB \
+
+    -Q "
+
+    CREATE TABLE Users (
+
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+
+        Name NVARCHAR(100),
+
+        Email NVARCHAR(100)
+
+    );
+ 
+    INSERT INTO Users (Name, Email) VALUES
+
+    ('Alice', 'alice@test.com'),
+
+    ('Bob', 'bob@test.com'),
+
+    ('Charlie', 'charlie@test.com');
+
+    "
+ 
