@@ -1,0 +1,21 @@
+name: Deployment Notifications
+ 
+on:
+  workflow_dispatch:
+  workflow_call:
+  push:
+    branches:
+      - main
+ 
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Send Deployment Notification to Teams
+        run: |
+          MESSAGE="Deployment event triggered in ${{ github.repository }} by ${{ github.actor }}. Check GitHub Actions for details."
+ 
+          curl -H "Content-Type: application/json" \
+          -d "{\"text\": \"$MESSAGE\"}" \
+          "${{ secrets.TEAM_WEBHOOK }}"

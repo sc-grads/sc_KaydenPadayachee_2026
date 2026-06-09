@@ -7,7 +7,6 @@ on:
   create:
   pull_request_review:
     types: [submitted]
-  workflow_dispatch:
  
 jobs:
   notify-teams:
@@ -19,28 +18,25 @@ jobs:
           EVENT_NAME="${{ github.event_name }}"
           EVENT_ACTION="${{ github.event.action }}"
  
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            MESSAGE="**SQL DEPLOYMENT TRIGGERED** in **${{ github.repository }}** by **${{ github.actor }}**. Deployment pipeline started."
- 
-          elif [ "$EVENT_NAME" = "push" ]; then
-            MESSAGE="**PUSH EVENT** in **${{ github.repository }}** by **${{ github.actor }}** | Commit: **${{ github.event.head_commit.message }}**"
+          if [ "$EVENT_NAME" = "push" ]; then
+            MESSAGE="**Push event** in ${{ github.repository }} by ${{ github.actor }}.\n\nCommit: ${{ github.event.head_commit.message }}\n${{ github.event.head_commit.url }}"
  
           elif [ "$EVENT_NAME" = "pull_request" ] && [ "$EVENT_ACTION" = "opened" ]; then
-            MESSAGE="**PULL REQUEST OPENED**: #${{ github.event.pull_request.number }} by **${{ github.actor }}** | Title: **${{ github.event.pull_request.title }}**"
+            MESSAGE="** Approval required**: Pull Request #${{ github.event.pull_request.number }} opened in ${{ github.repository }} by ${{ github.actor }}.\n\nTitle: ${{ github.event.pull_request.title }}\nAssigned reviewer(s): ${{ join(github.event.pull_request.requested_reviewers.*.login, ', ') }}\n${{ github.event.pull_request.html_url }}"
  
           elif [ "$EVENT_NAME" = "pull_request_review" ]; then
-            MESSAGE="**PULL REQUEST REVIEW**: #${{ github.event.pull_request.number }} | State: **${{ github.event.review.state }}** by **${{ github.actor }}**"
+            MESSAGE="** Review update**: Pull Request #${{ github.event.pull_request.number }} reviewed in ${{ github.repository }} by ${{ github.actor }}.\n\nDecision: ${{ github.event.review.state }}\n${{ github.event.pull_request.html_url }}"
  
           elif [ "$EVENT_NAME" = "pull_request" ] && [ "$EVENT_ACTION" = "closed" ]; then
-            MESSAGE="**PULL REQUEST MERGED**: #${{ github.event.pull_request.number }} into **main** by **${{ github.actor }}**"
+            MESSAGE="** Merge complete**: Pull Request #${{ github.event.pull_request.number }} merged into main in ${{ github.repository }} by ${{ github.actor }}.\n${{ github.event.pull_request.html_url }}"
  
           elif [ "$EVENT_NAME" = "create" ]; then
-            MESSAGE="**BRANCH CREATED**: **${{ github.ref }}** in **${{ github.repository }}** by **${{ github.actor }}**"
+            MESSAGE="**Branch created**: ${{ github.ref }} in ${{ github.repository }} by ${{ github.actor }}.\nThis branch is now available for new work.\n${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref }}"
  
           else
-            MESSAGE="**EVENT OCCURRED** in **${{ github.repository }}** by **${{ github.actor }}**"
+            MESSAGE="**Other event** in ${{ github.repository }} by ${{ github.actor }}.\nRef: ${{ github.ref }}"
           fi
  
           curl -H "Content-Type: application/json" \
           -d "{\"text\": \"$MESSAGE\"}" \
-          "${{ secrets.TEAM_WEBHOOK }}" 
+          ${{ secrets.TEAMS_WEBHOOK }}
