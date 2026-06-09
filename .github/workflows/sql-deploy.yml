@@ -1,176 +1,69 @@
 name: Deploy Local SQL
  
 on:
-
   push:
-
     branches:
-
       - main
-
   workflow_dispatch:
  
 jobs:
-
   deploy:
-
     runs-on: ubuntu-latest
- 
+
     steps:
-
       - name: Checkout code
-
         uses: actions/checkout@v4
- 
-      # -----------------------
 
-      # INSTALL SQLCMD (your working version)
-
-      # -----------------------
-
+      # STEP 1: Install SQLCMD
       - name: Install SQLCMD
-
         run: |
-
           curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
-
           curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
-
           sudo apt-get update
-
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
- 
-      # -----------------------
 
-      # DEBUG SECRET CHECK
-
-      # -----------------------
-
+      # STEP 2: Show secret status (debug)
       - name: Show secret status (debug)
-
         run: |
-
           if [[ -n "${{ secrets.SQL_SERVER }}" ]]; then
-
             echo "Secret SQL_SERVER is configured"
-
           else
-
             echo "WARNING: SQL_SERVER is missing"
-
           fi
- 
-      # -----------------------
 
-      # SEND TEAMS APPROVAL REQUEST (ADDED FROM FRIEND)
-
-      # -----------------------
-
+      # STEP 3: Send Teams approval request (BEFORE deployment)
       - name: Send approval request to Teams
-
         shell: pwsh
-
-        run: |
-
-          $body = @{
-
-            text = "Approval required: SQL deployment is starting for ${{ github.repository }} by ${{ github.actor }}."
-
-          } | ConvertTo-Json
- 
-          Invoke-RestMethod -Method Post `
-
-            -Uri "${{ secrets.TEAMS_WEBHOOK }}" `
-
-            -ContentType "application/json" `
-
-            -Body $body
- 
-      # -----------------------
-
-      # EXECUTE SQL DEPLOYMENT
-
-      # -----------------------
-
-      - name: Execute SQL Script
-
         env:
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          if (-not $env:TEAMS_WEBHOOK) {
+            Write-Host "TEAMS_WEBHOOK is missing or empty"
+            exit 1
+          }
 
+          $body = @{
+            text = "Approval required: SQL deployment is waiting for $env:REPO by $env:ACTOR."
+          } | ConvertTo-Json
+
+          Invoke-RestMethod -Method Post `
+            -Uri $env:TEAMS_WEBHOOK `
+            -ContentType "application/json" `
+            -Body $body
+
+      # STEP 4: Execute SQL Script (DEPLOYMENT)
+      - name: Execute SQL Script
+        env:
           SERVER: ${{ secrets.SQL_SERVER }}
-
           USERNAME: ${{ secrets.DB_USER }}
-
           PASSWORD: ${{ secrets.DB_PASSWORD }}
-
         run: |
-
           /opt/mssql-tools18/bin/sqlcmd \
-
           -S "$SERVER" \
-
           -U "$USERNAME" \
-
           -P "$PASSWORD" \
-
           -d "Cloud-tunnel-KP" \
-
           -i database/init.sql \
-
           -C
- 
-      # -----------------------
-
-      # SUCCESS NOTIFICATION
-
-      # -----------------------
-
-      - name: Notify Teams - Success
-
-        if: success()
-
-        shell: pwsh
-
-        run: |
-
-          $body = @{
-
-            text = "SQL deployment SUCCESSFUL for ${{ github.repository }} by ${{ github.actor }}."
-
-          } | ConvertTo-Json
- 
-          Invoke-RestMethod -Method Post `
-
-            -Uri "${{ secrets.TEAMS_WEBHOOK }}" `
-
-            -ContentType "application/json" `
-
-            -Body $body
- 
-      # -----------------------
-
-      # FAILURE NOTIFICATION
-
-      # -----------------------
-
-      - name: Notify Teams - Failure
-
-        if: failure()
-
-        shell: pwsh
-
-        run: |
-
-          $body = @{
-
-            text = "SQL deployment FAILED for ${{ github.repository }}. Check GitHub Actions logs."
-
-          } | ConvertTo-Json
- 
-          Invoke-RestMethod -Method Post `
-
-            -Uri "${{ secrets.TEAMS_WEBHOOK }}" `
-
-            -ContentType "application/json" `
-
-            -Body $body
- 
