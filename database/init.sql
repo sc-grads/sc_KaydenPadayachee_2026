@@ -1,12 +1,12 @@
 -- Create database Cloud-tunnel-JP
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Cloud-tunnel-JP')
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Cloud-tunnel-KP')
 BEGIN
     EXECUTE('CREATE DATABASE [Cloud-tunnel-JP]');
-    PRINT 'Database [Cloud-tunnel-JP] created successfully';
+    PRINT 'Database [Cloud-tunnel-KP] created successfully';
 END
 GO
  
-USE [Cloud-tunnel-JP];
+USE [Cloud-tunnel-KP];
 GO
  
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'People')
