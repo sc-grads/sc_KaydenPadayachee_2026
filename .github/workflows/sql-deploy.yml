@@ -1,65 +1,26 @@
-name: SQL Deployment (Debug Enabled)
+- name: Run SQL Init Script
+
+  env:
+
+    SERVER: ${{ secrets.SQL_SERVER }}
+
+    PORT: ${{ secrets.SQL_PORT }}
+
+    USER: ${{ secrets.SQL_USER }}
+
+    PASSWORD: ${{ secrets.SQL_PASSWORD }}
  
-on:
-  workflow_dispatch:
+  run: |
+
+    echo "Starting SQL execution..."
  
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+    /opt/mssql-tools/bin/sqlcmd \
+
+    -S "${SERVER},${PORT}" \
+
+    -U "${USER}" \
+
+    -P "${PASSWORD}" \
+
+    -i "./database/init.sql"
  
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
- 
-      # 🔍 DEBUG STEP 1 - Where are we?
-      - name: Debug - Current Directory
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "---------------------"
- 
-      # 🔍 DEBUG STEP 2 - Show all files
-      - name: Debug - List Files
-        run: |
-          echo "Repo structure:"
-          ls -R
-          echo "---------------------"
- 
-      # 🔍 DEBUG STEP 3 - Confirm SQL file exists
-      - name: Debug - Check SQL File
-        run: |
-          echo "Checking init.sql path..."
-          if [ -f ./database/init.sql ]; then
-            echo "✅ init.sql FOUND"
-          else
-            echo "❌ init.sql NOT FOUND"
-            exit 1
-          fi
- 
-      # 🔧 Install SQL tools
-      - name: Install SQL Tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mssql-tools unixodbc-dev
- 
-      # 🔍 DEBUG STEP 4 - Confirm sqlcmd exists
-      - name: Debug - SQLCMD Location
-        run: |
-          which sqlcmd || echo "sqlcmd NOT FOUND"
-          ls /opt/mssql-tools/bin || echo "mssql-tools path missing"
- 
-      # 🚀 RUN SQL SCRIPT
-      - name: Run SQL Init Script
-        env:
-          SERVER: ${{ secrets.SQL_SERVER }}
-          PORT: ${{ secrets.SQL_PORT }}
-          USER: ${{ secrets.SQL_USER }}
-          PASSWORD: ${{ secrets.SQL_PASSWORD }}
- 
-        run: |
-          echo "Starting SQL execution..."
-          /opt/mssql-tools/bin/sqlcmd \
-          -S $SERVER,$PORT \
-          -U $USER \
-          -P $PASSWORD \
-          -i ./database/init.sql
