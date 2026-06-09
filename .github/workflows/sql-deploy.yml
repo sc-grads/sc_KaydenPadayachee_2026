@@ -36,5 +36,5 @@ jobs:
           -U "$USERNAME" \
           -P "$PASSWORD" \
           -d "Cloud-tunnel-KP" \
-          -i database/sql-deploy.sql \
+          -i database/init.sql \
           -C
