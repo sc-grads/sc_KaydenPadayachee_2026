@@ -28,7 +28,7 @@ jobs:
       - name: Execute SQL Script
         env:
           SERVER: ${{ secrets.SQL_SERVER }}
-          USERNAME: ${{ secrets.DB_USERNAME }}
+          USERNAME: ${{ secrets.DB_USER }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           /opt/mssql-tools18/bin/sqlcmd \
