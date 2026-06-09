@@ -1,32 +1,39 @@
--- Create database if it doesn't exist
-IF DB_ID('DBCLOUDTUNNELINGKP') IS NULL
+-- Create database Cloud-tunnel-JP
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Cloud-tunnel-JP')
 BEGIN
-    CREATE DATABASE DBCLOUDTUNNELINGKP;
+    EXECUTE('CREATE DATABASE [Cloud-tunnel-JP]');
+    PRINT 'Database [Cloud-tunnel-JP] created successfully';
 END
 GO
  
--- Switch to database
-USE DBCLOUDTUNNELINGKP;
+USE [Cloud-tunnel-JP];
 GO
  
--- Create Users table if it doesn't exist
-IF OBJECT_ID('Users', 'U') IS NULL
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'People')
 BEGIN
-    CREATE TABLE Users (
-        Id INT IDENTITY(1,1) PRIMARY KEY,
-        Name NVARCHAR(100),
-        Email NVARCHAR(100) UNIQUE
+    CREATE TABLE People (
+        PersonID INT IDENTITY(1,1) PRIMARY KEY,
+        FirstName NVARCHAR(50) NOT NULL,
+        LastName NVARCHAR(50) NOT NULL,
+        CreatedDate DATETIME DEFAULT GETDATE()
     );
+    PRINT 'People table created successfully';
 END
 GO
+INSERT INTO People (FirstName, LastName) VALUES 
+('Jabulane', 'Poulo'),
+('Thabo', 'Nkosi'),
+('Lerato', 'Mbeki'),
+('Sipho', 'Dlamini'),
+('Nomsa', 'Zulu'),
+('Alice', 'Johnson'),
+('Bob', 'Smith'),
+('Carol', 'Davis'),
+('David', 'Wilson'),
+('Eve', 'Brown');
  
--- Seed data (no duplicates)
-IF NOT EXISTS (SELECT 1 FROM Users WHERE Email = 'alice@test.com')
-INSERT INTO Users (Name, Email) VALUES ('Alice', 'alice@test.com');
- 
-IF NOT EXISTS (SELECT 1 FROM Users WHERE Email = 'bob@test.com')
-INSERT INTO Users (Name, Email) VALUES ('Bob', 'bob@test.com');
- 
-IF NOT EXISTS (SELECT 1 FROM Users WHERE Email = 'charlie@test.com')
-INSERT INTO Users (Name, Email) VALUES ('Charlie', 'charlie@test.com');
 GO
+SELECT PersonID, FirstName, LastName, CreatedDate FROM People;
+GO
+ 
+PRINT 'Deployment completed successfully';
