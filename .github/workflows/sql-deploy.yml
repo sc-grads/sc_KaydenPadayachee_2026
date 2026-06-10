@@ -1,22 +1,51 @@
-name: Deploy Local SQL
+name: Deploy SQL
+ 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
  
-    #  THIS creates the approval gate
-    environment: production
+env:
+  DEPLOY_ENV: sql-deployment
+ 
+jobs:
+  request-approval:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send approval request to Teams
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "DEPLOYMENT APPROVAL REQUIRED",
+            "text": "**A database deployment requires approval**\n\n**Environment:** Local SQL Server\n**Database:** Cloud-tunnel-JP\n**Requested by:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}\n**Time:** ${{ github.run_started_at }}\n\n[Review Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+            "themeColor": "FF0000"
+          }' \
+          ${{ secrets.TEAMS_WEBHOOK }}
+ 
+      - name: Wait for approval message
+        run: |
+          echo "Approval requested. Waiting for GitHub Environment approval..."
+ 
+  deploy:
+    needs: request-approval
+    runs-on: ubuntu-latest
+    environment: sql-deployment
  
     steps:
-      # STEP 1: Checkout code
       - name: Checkout code
         uses: actions/checkout@v4
  
-      # STEP 2: Install SQLCMD
+      - name: Send started notification to Teams
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "SQL Deployment Started (Approved)",
+            "text": "**Environment:** Local SQL Server\n**Database:** Cloud-tunnel-JP\n**Time:** ${{ github.run_started_at }}\n\n[View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+            "themeColor": "FFA500"
+          }' \
+          ${{ secrets.TEAMS_WEBHOOK }}
+ 
       - name: Install SQLCMD
         run: |
           curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
@@ -24,43 +53,12 @@ jobs:
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
  
-      # STEP 3: Debug secrets
-      - name: Show secret status (debug)
+      - name: Check secrets
         run: |
-          if [[ -n "${{ secrets.SQL_SERVER }}" ]]; then
-            echo "Secret SQL_SERVER is configured"
-          else
-            echo "WARNING: SQL_SERVER is missing"
-          fi
+          [[ -n "${{ secrets.SQL_SERVER }}" ]] && echo "SQL_SERVER OK" || echo "SQL_SERVER MISSING"
+          [[ -n "${{ secrets.DB_USER }}" ]] && echo "DB_USER OK" || echo "DB_USER MISSING"
+          [[ -n "${{ secrets.DB_PASSWORD }}" ]] && echo "DB_PASSWORD OK" || echo "DB_PASSWORD MISSING"
  
-      # STEP 4: Send Teams notification (approval required)
-      - name: Send approval request to Teams
-        shell: pwsh
-        env:
-          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
-          REPO: ${{ github.repository }}
-          ACTOR: ${{ github.actor }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          if (-not $env:TEAMS_WEBHOOK) {
-            Write-Host "TEAMS_WEBHOOK is missing or empty"
-            exit 1
-          }
- 
-          $url = "https://github.com/$env:REPO/actions/runs/$env:RUN_ID"
- 
-          $body = @{
-            text = " Approval required for SQL deployment`nRepo: $env:REPO`nTriggered by: $env:ACTOR`nApprove here: $url"
-          } | ConvertTo-Json
- 
-          Invoke-RestMethod -Method Post `
-            -Uri $env:TEAMS_WEBHOOK `
-            -ContentType "application/json" `
-            -Body $body
- 
-      #  GitHub will PAUSE here until approved
- 
-      # STEP 5: Execute SQL Script (runs ONLY after approval)
       - name: Execute SQL Script
         env:
           SERVER: ${{ secrets.SQL_SERVER }}
@@ -68,42 +66,32 @@ jobs:
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           /opt/mssql-tools18/bin/sqlcmd \
-          -S "$SERVER" \
-          -U "$USERNAME" \
-          -P "$PASSWORD" \
-          -d "Cloud-tunnel-KP" \
-          -i database/init.sql \
-          -C \
-          -l 30 
+            -S "$SERVER" \
+            -U "$USERNAME" \
+            -P "$PASSWORD" \
+            -d "master" \
+            -i database/init.sql \
+            -C \
+            -b
  
-      # STEP 6: Notify success
-      - name: Notify Teams - Success
+      - name: Send success notification to Teams
         if: success()
-        shell: pwsh
-        env:
-          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
         run: |
-          $body = @{
-            text = " SQL deployment completed successfully."
-          } | ConvertTo-Json
+          curl -H "Content-Type: application/json" \
+          -d "{
+            \"title\": \"Deployment Successful\",
+            \"text\": \"Environment: Local SQL Server\nDatabase: Cloud-tunnel-KP\nTime: $(date -u)\",
+            \"themeColor\": \"00FF00\"
+          }" \
+          ${{ secrets.TEAMS_WEBHOOK }}
  
-          Invoke-RestMethod -Method Post `
-            -Uri $env:TEAMS_WEBHOOK `
-            -ContentType "application/json" `
-            -Body $body
- 
-      # STEP 7: Notify failure
-      - name: Notify Teams - Failure
+      - name: Send failure notification to Teams
         if: failure()
-        shell: pwsh
-        env:
-          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
         run: |
-          $body = @{
-            text = " SQL deployment FAILED. Check GitHub Actions logs."
-          } | ConvertTo-Json
- 
-          Invoke-RestMethod -Method Post `
-            -Uri $env:TEAMS_WEBHOOK `
-            -ContentType "application/json" `
-            -Body $body
+          curl -H "Content-Type: application/json" \
+          -d "{
+            \"title\": \"Deployment Failed\",
+            \"text\": \"Environment: Local SQL Server\nCheck logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nTime: $(date -u)\",
+            \"themeColor\": \"FF0000\"
+          }" \
+          ${{ secrets.TEAMS_WEBHOOK}}
