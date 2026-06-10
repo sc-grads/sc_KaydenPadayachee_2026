@@ -12,6 +12,9 @@ on:
       database:
         required: true
         type: string
+      env_name:
+        required: true
+        type: string
     secrets:
       username:
         required: true
@@ -23,9 +26,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: ${{ inputs.env_name }}
  
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
  
       - name: Notify Start
         run: |
@@ -44,7 +49,7 @@ jobs:
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
  
-      - name: Execute SQL
+      - name: Execute SQL Script
         run: |
           /opt/mssql-tools18/bin/sqlcmd \
             -S "${{ inputs.server }},${{ inputs.port }}" \
@@ -64,3 +69,14 @@ jobs:
             "themeColor": "00FF00"
           }' \
           ${{ secrets.webhook }}
+ 
+      - name: Notify Failure
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "Deployment Failed",
+            "text": "Check GitHub logs for details",
+            "themeColor": "FF0000"
+          }' \
+          ${{ secrets.webhook }} 

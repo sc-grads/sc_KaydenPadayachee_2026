@@ -8,28 +8,32 @@ on:
  
 jobs:
  
-
+  # =========================
+  # LOCAL DEPLOYMENT
+  # =========================
   deploy-local:
     uses: ./.github/workflows/sql-deploy-template.yml
-    environment: local-sql
     with:
       server: ${{ secrets.SQL_SERVER }}
       port: ${{ secrets.SQL_PORT }}
       database: Cloud-tunnel-KP
+      env_name: local-sql
     secrets:
       username: ${{ secrets.DB_USER }}
       password: ${{ secrets.DB_PASSWORD }}
       webhook: ${{ secrets.TEAMS_WEBHOOK }}
  
-
+  # =========================
+  # PARTNER DEPLOYMENT
+  # =========================
   deploy-partner:
     needs: deploy-local
     uses: ./.github/workflows/sql-deploy-template.yml
-    environment: partner-sql
     with:
       server: ${{ secrets.SQL_JP_SERVER }}
       port: ${{ secrets.SQL_PORT }}
       database: Cloud-tunnel-KP
+      env_name: partner-sql
     secrets:
       username: ${{ secrets.DB_USER }}
       password: ${{ secrets.SQL_JP_PASSWORD }}
