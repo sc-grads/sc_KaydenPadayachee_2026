@@ -1,4 +1,4 @@
-name: Deploy SQL
+name: Deploy Local SQL
  
 on:
   push:
@@ -18,14 +18,15 @@ jobs:
           curl -H "Content-Type: application/json" \
           -d '{
             "title": "DEPLOYMENT APPROVAL REQUIRED",
-            "text": "**A database deployment requires approval**\n\n**Environment:** Local SQL Server\n**Database:** Cloud-tunnel-JP\n**Requested by:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}\n**Time:** ${{ github.run_started_at }}\n\n[Review Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+            "text": "**A database deployment requires your approval**\n\n**Environment:** Local SQL Server\n**Requested by:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}\n**Run:** ${{ github.run_id }}\n\n[Open Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
             "themeColor": "FF0000"
           }' \
           ${{ secrets.TEAMS_WEBHOOK }}
  
-      - name: Wait for approval message
+      - name: Waiting for approval
         run: |
-          echo "Approval requested. Waiting for GitHub Environment approval..."
+          echo "Approval request sent to Teams..."
+          echo "Waiting for GitHub Environment approval gate..."
  
   deploy:
     needs: request-approval
@@ -40,8 +41,8 @@ jobs:
         run: |
           curl -H "Content-Type: application/json" \
           -d '{
-            "title": "SQL Deployment Started (Approved)",
-            "text": "**Environment:** Local SQL Server\n**Database:** Cloud-tunnel-JP\n**Time:** ${{ github.run_started_at }}\n\n[View Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+            "title": "SQL Deployment Started",
+            "text": "**Environment:** Local SQL Server\n**Status:** Running\n**Run:** ${{ github.run_id }}",
             "themeColor": "FFA500"
           }' \
           ${{ secrets.TEAMS_WEBHOOK }}
@@ -53,45 +54,39 @@ jobs:
           sudo apt-get update
           sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
  
-      - name: Check secrets
-        run: |
-          [[ -n "${{ secrets.SQL_SERVER }}" ]] && echo "SQL_SERVER OK" || echo "SQL_SERVER MISSING"
-          [[ -n "${{ secrets.DB_USER }}" ]] && echo "DB_USER OK" || echo "DB_USER MISSING"
-          [[ -n "${{ secrets.DB_PASSWORD }}" ]] && echo "DB_PASSWORD OK" || echo "DB_PASSWORD MISSING"
- 
       - name: Execute SQL Script
         env:
           SERVER: ${{ secrets.SQL_SERVER }}
+          PORT: ${{ secrets.SQL_PORT }}
           USERNAME: ${{ secrets.DB_USER }}
           PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           /opt/mssql-tools18/bin/sqlcmd \
-            -S "$SERVER" \
+            -S "${SERVER},${PORT}" \
             -U "$USERNAME" \
             -P "$PASSWORD" \
             -d "master" \
-            -i database/init.sql \
-            -C \
-            -b
+            -i Database/deploy.sql \
+            -C
  
       - name: Send success notification to Teams
         if: success()
         run: |
           curl -H "Content-Type: application/json" \
-          -d "{
-            \"title\": \"Deployment Successful\",
-            \"text\": \"Environment: Local SQL Server\nDatabase: Cloud-tunnel-KP\nTime: $(date -u)\",
-            \"themeColor\": \"00FF00\"
-          }" \
+          -d '{
+            "title": "Deployment Successful",
+            "text": "**SQL Server deployment completed successfully**\n\nRun: ${{ github.run_id }}",
+            "themeColor": "00FF00"
+          }' \
           ${{ secrets.TEAMS_WEBHOOK }}
  
       - name: Send failure notification to Teams
         if: failure()
         run: |
           curl -H "Content-Type: application/json" \
-          -d "{
-            \"title\": \"Deployment Failed\",
-            \"text\": \"Environment: Local SQL Server\nCheck logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\nTime: $(date -u)\",
-            \"themeColor\": \"FF0000\"
-          }" \
-          ${{ secrets.TEAMS_WEBHOOK}}
+          -d '{
+            "title": "Deployment Failed",
+            "text": "**SQL deployment failed**\n\nCheck logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "themeColor": "FF0000"
+          }' \
+          ${{ secrets.TEAMS_WEBHOOK }}
