@@ -1,7 +1,7 @@
--- Create database Cloud-tunnel-JP
+
 IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'Cloud-tunnel-KP')
 BEGIN
-    EXECUTE('CREATE DATABASE [Cloud-tunnel-JP]');
+    EXECUTE('CREATE DATABASE [Cloud-tunnel-KP]');
     PRINT 'Database [Cloud-tunnel-KP] created successfully';
 END
 GO
@@ -22,7 +22,7 @@ END
 GO
 INSERT INTO People (FirstName, LastName) VALUES 
 ('Jabulane', 'Poulo'),
-('Thabo', 'Nkosi'),
+('Kayden', 'Nkosi'),
 ('Lerato', 'Mbeki'),
 ('Sipho', 'Dlamini'),
 ('Nomsa', 'Zulu'),
