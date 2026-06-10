@@ -66,7 +66,7 @@ jobs:
             -U "$USERNAME" \
             -P "$PASSWORD" \
             -d "master" \
-            -i Database/deploy.sql \
+            -i database/init.sql \
             -C
  
       - name: Send success notification to Teams
