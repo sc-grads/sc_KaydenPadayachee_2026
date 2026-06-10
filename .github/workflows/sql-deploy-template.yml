@@ -1,0 +1,66 @@
+name: SQL Deploy Template
+ 
+on:
+  workflow_call:
+    inputs:
+      server:
+        required: true
+        type: string
+      port:
+        required: true
+        type: string
+      database:
+        required: true
+        type: string
+    secrets:
+      username:
+        required: true
+      password:
+        required: true
+      webhook:
+        required: true
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - uses: actions/checkout@v4
+ 
+      - name: Notify Start
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "SQL Deployment Started",
+            "text": "Deploying to ${{ inputs.server }}",
+            "themeColor": "FFA500"
+          }' \
+          ${{ secrets.webhook }}
+ 
+      - name: Install SQLCMD
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
+ 
+      - name: Execute SQL
+        run: |
+          /opt/mssql-tools18/bin/sqlcmd \
+            -S "${{ inputs.server }},${{ inputs.port }}" \
+            -U "${{ secrets.username }}" \
+            -P "${{ secrets.password }}" \
+            -d "master" \
+            -i database/init.sql \
+            -C
+ 
+      - name: Notify Success
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "Deployment Success",
+            "text": "Deployment completed successfully",
+            "themeColor": "00FF00"
+          }' \
+          ${{ secrets.webhook }}
