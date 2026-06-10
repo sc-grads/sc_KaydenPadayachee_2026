@@ -1,0 +1,40 @@
+name: Reusable SQL Deployment
+ 
+on:
+  workflow_call:
+    inputs:
+      environment-name:
+        required: true
+        type: string
+ 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+ 
+    environment: ${{ inputs.environment-name }}
+ 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+ 
+      - name: Install SQLCMD
+        run: |
+          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
+          curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
+ 
+      - name: Execute SQL Script
+        env:
+          SERVER: ${{ secrets.DB_SERVER }}
+          PORT: ${{ secrets.DB_PORT }}
+          USERNAME: ${{ secrets.DB_USER }}
+          PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          /opt/mssql-tools18/bin/sqlcmd \
+            -S "${SERVER},${PORT}" \
+            -U "$USERNAME" \
+            -P "$PASSWORD" \
+            -d "master" \
+            -i database/init.sql \
+            -C

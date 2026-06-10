@@ -4,15 +4,15 @@ on:
   push:
     branches:
       - main
+ 
   workflow_dispatch:
  
 jobs:
  
-# =========================
-# 1. REQUEST INITIAL APPROVAL
-# =========================
+  
   request-approval:
     runs-on: ubuntu-latest
+ 
     steps:
       - name: Send approval request to Teams
         run: |
@@ -25,139 +25,80 @@ jobs:
           ${{ secrets.TEAMS_WEBHOOK }}
  
       - name: Waiting for approval
-        run: echo "Waiting for GitHub environment approval (local-sql)..."
+        run: echo "Waiting for local-sql approval..."
  
- 
-# =========================
-# 2. LOCAL DEPLOYMENT
-# =========================
+  
   deploy-local:
     needs: request-approval
-    runs-on: ubuntu-latest
-    environment: local-sql
  
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    uses: ./.github/workflows/reusable-sql-deploy.yml
  
-      - name: Notify Local Deployment Started
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "title": "LOCAL SQL DEPLOYMENT STARTED",
-            "text": "**Status:** Running\n**Run:** ${{ github.run_id }}",
-            "themeColor": "FFA500"
-          }' \
-          ${{ secrets.TEAMS_WEBHOOK }}
+    with:
+      environment-name: local-sql
  
-      - name: Install SQLCMD
-        run: |
-          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
-          curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
-          sudo apt-get update
-          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
+    secrets: inherit
  
-      - name: Execute SQL on LOCAL server
-        env:
-          SERVER: ${{ secrets.SQL_SERVER }}
-          PORT: ${{ secrets.SQL_PORT }}
-          USERNAME: ${{ secrets.DB_USER }}
-          PASSWORD: ${{ secrets.DB_PASSWORD }}
-        run: |
-          /opt/mssql-tools18/bin/sqlcmd \
-            -S "${SERVER},${PORT}" \
-            -U "$USERNAME" \
-            -P "$PASSWORD" \
-            -d "master" \
-            -i database/init.sql \
-            -C
- 
-      - name: Notify Local Success
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "title": "LOCAL DEPLOYMENT SUCCESS",
-            "text": "**Local SQL deployment completed successfully**\nRun: ${{ github.run_id }}",
-            "themeColor": "00FF00"
-          }' \
-          ${{ secrets.TEAMS_WEBHOOK }}
- 
- 
-# =========================
-# 3. PARTNER APPROVAL GATE
-# =========================
+  
   partner-approval:
     needs: deploy-local
+ 
     runs-on: ubuntu-latest
+ 
     environment: partner-sql
  
     steps:
-      - name: Waiting for partner approval
-        run: echo "Waiting for partner approval before tunnel deployment..."
+      - name: Waiting for Partner Approval
+        run: echo "Waiting for partner approval..."
  
- 
-# =========================
-# 4. PARTNER DEPLOYMENT
-# =========================
+  
   deploy-partner:
     needs: partner-approval
+ 
+    uses: ./.github/workflows/reusable-sql-deploy.yml
+ 
+    with:
+      environment-name: partner-sql
+ 
+    secrets: inherit
+ 
+  
+  notify-success:
+    needs:
+      - deploy-local
+      - deploy-partner
+ 
+    if: success()
+ 
     runs-on: ubuntu-latest
  
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
- 
-      - name: Notify Partner Deployment Started
+      - name: Send Success Notification
         run: |
           curl -H "Content-Type: application/json" \
           -d '{
-            "title": "PARTNER SQL DEPLOYMENT STARTED",
-            "text": "**Status:** Running on partner tunnel\n**Run:** ${{ github.run_id }}",
-            "themeColor": "FFA500"
-          }' \
-          ${{ secrets.TEAMS_WEBHOOK }}
- 
-      - name: Install SQLCMD
-        run: |
-          curl https://packages.microsoft.com/keys/microsoft.asc | sudo tee /etc/apt/trusted.gpg.d/microsoft.asc
-          curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
-          sudo apt-get update
-          sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18
- 
-      - name: Execute SQL on PARTNER server (tunnel)
-        env:
-          SERVER: ${{ secrets.SQL_JP_SERVER }}
-          PORT: ${{ secrets.SQL_PORT }}
-          USERNAME: ${{ secrets.DB_USER }}
-          PASSWORD: ${{ secrets.SQL_JP_PASSWORD }}
-        run: |
-          /opt/mssql-tools18/bin/sqlcmd \
-            -S "${SERVER},${PORT}" \
-            -U "$USERNAME" \
-            -P "$PASSWORD" \
-            -d "master" \
-            -i database/init.sql \
-            -C
- 
-      - name: Notify Partner Success
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "title": "PARTNER DEPLOYMENT SUCCESS",
-            "text": "**Partner SQL deployment completed successfully**\nRun: ${{ github.run_id }}",
+            "title": "SQL DEPLOYMENT SUCCESS",
+            "text": "**Local and Partner deployments completed successfully**\nRun: ${{ github.run_id }}",
             "themeColor": "00FF00"
           }' \
           ${{ secrets.TEAMS_WEBHOOK }}
  
-      - name: Notify Failure
-        if: failure()
+ 
+  notify-failure:
+    needs:
+      - deploy-local
+      - deploy-partner
+ 
+    if: failure()
+ 
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - name: Send Failure Notification
         run: |
           curl -H "Content-Type: application/json" \
           -d '{
-            "title": "DEPLOYMENT FAILED",
-            "text": "**One of the SQL deployments failed**\nCheck logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "title": "SQL DEPLOYMENT FAILED",
+            "text": "**One of the deployments failed**\n\nView logs:\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "themeColor": "FF0000"
           }' \
-          ${{ secrets.TEAMS_WEBHOOK }}
+          ${{ secrets.TEAMS_WEBHOOK }} 
