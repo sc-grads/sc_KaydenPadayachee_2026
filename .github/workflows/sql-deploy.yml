@@ -73,7 +73,8 @@ jobs:
           -P "$PASSWORD" \
           -d "Cloud-tunnel-KP" \
           -i database/init.sql \
-          -C
+          -C \
+          -l 30 
  
       # STEP 6: Notify success
       - name: Notify Teams - Success
