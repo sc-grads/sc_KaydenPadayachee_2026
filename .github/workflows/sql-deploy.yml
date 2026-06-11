@@ -1,4 +1,4 @@
-name: Local and Partner Deployment
+name: Deploy Local + Partner SQL
  
 on:
   push:
@@ -9,28 +9,7 @@ on:
  
 jobs:
  
-  
-  request-approval:
-    runs-on: ubuntu-latest
- 
-    steps:
-      - name: Send approval request to Teams
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "title": "LOCAL SQL DEPLOYMENT APPROVAL REQUIRED",
-            "text": "**A database deployment requires approval**\n\n**Requested by:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}\n**Run:** ${{ github.run_id }}\n\n[Open Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
-            "themeColor": "FF0000"
-          }' \
-          ${{ secrets.TEAMS_WEBHOOK }}
- 
-      - name: Waiting for approval
-        run: echo "Waiting for local-sql approval..."
- 
-  
   deploy-local:
-    needs: request-approval
- 
     uses: ./.github/workflows/reusable-sql-deploy.yml
  
     with:
@@ -38,21 +17,8 @@ jobs:
  
     secrets: inherit
  
-  
-  partner-approval:
-    needs: deploy-local
- 
-    runs-on: ubuntu-latest
- 
-    environment: partner-sql
- 
-    steps:
-      - name: Waiting for Partner Approval
-        run: echo "Waiting for partner approval..."
- 
-  
   deploy-partner:
-    needs: partner-approval
+    needs: deploy-local
  
     uses: ./.github/workflows/reusable-sql-deploy.yml
  
@@ -61,7 +27,6 @@ jobs:
  
     secrets: inherit
  
-  
   notify-success:
     needs:
       - deploy-local
@@ -81,7 +46,6 @@ jobs:
             "themeColor": "00FF00"
           }' \
           ${{ secrets.TEAMS_WEBHOOK }}
- 
  
   notify-failure:
     needs:
