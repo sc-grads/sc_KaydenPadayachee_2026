@@ -1,4 +1,4 @@
-name: Deploy Local + Partner SQL
+name: DevTest Then Production
  
 on:
   push:
@@ -9,53 +9,52 @@ on:
  
 jobs:
  
-  deploy-local:
+  DevTest:
     uses: ./.github/workflows/reusable-sql-deploy.yml
- 
     with:
       environment-name: local-sql
- 
     secrets: inherit
  
-  deploy-partner:
-    needs: deploy-local
+  notify-production-approval:
+    needs: DevTest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Production Approval Request
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "PRODUCTION SQL DEPLOYMENT APPROVAL REQUIRED",
+            "text": "**DevTest deployment completed successfully.**\n\nProduction deployment is now awaiting approval.\n\n**Requested by:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}\n**Run:** ${{ github.run_id }}\n\n[Open Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+            "themeColor": "FFA500"
+          }' \
+          ${{ secrets.TEAMS_WEBHOOK }}
  
+  Production:
+    needs: notify-production-approval
     uses: ./.github/workflows/reusable-sql-deploy.yml
- 
     with:
       environment-name: partner-sql
- 
     secrets: inherit
  
   notify-success:
-    needs:
-      - deploy-local
-      - deploy-partner
- 
+    needs: [DevTest, Production]
     if: success()
- 
     runs-on: ubuntu-latest
- 
     steps:
       - name: Send Success Notification
         run: |
           curl -H "Content-Type: application/json" \
           -d '{
             "title": "SQL DEPLOYMENT SUCCESS",
-            "text": "**Local and Partner deployments completed successfully**\nRun: ${{ github.run_id }}",
+            "text": "**DevTest and Production deployments completed successfully**\nRun: ${{ github.run_id }}",
             "themeColor": "00FF00"
           }' \
           ${{ secrets.TEAMS_WEBHOOK }}
  
   notify-failure:
-    needs:
-      - deploy-local
-      - deploy-partner
- 
+    needs: [DevTest, Production]
     if: failure()
- 
     runs-on: ubuntu-latest
- 
     steps:
       - name: Send Failure Notification
         run: |
@@ -65,4 +64,4 @@ jobs:
             "text": "**One of the deployments failed**\n\nView logs:\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
             "themeColor": "FF0000"
           }' \
-          ${{ secrets.TEAMS_WEBHOOK }} 
+          ${{ secrets.TEAMS_WEBHOOK }}
