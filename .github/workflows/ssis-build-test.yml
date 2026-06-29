@@ -1,0 +1,45 @@
+name: SSIS Build Test (ProjectTime)
+ 
+on:
+  workflow_dispatch:
+ 
+jobs:
+ 
+  build-ssis:
+    runs-on: windows-latest
+ 
+    steps:
+ 
+      # =========================
+      # 1. Checkout code
+      # =========================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+ 
+      # =========================
+      # 2. Setup MSBuild
+      # =========================
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+ 
+      # =========================
+      # 3. Restore NuGet (safe for SSIS projects)
+      # =========================
+      - name: Restore NuGet
+        run: nuget restore
+ 
+      # =========================
+      # 4. Build SSIS Project
+      # =========================
+      - name: Build SSIS Project
+        run: |
+          msbuild ProjectTime.dtproj ^
+            /p:Configuration=Release ^
+            /p:Platform="Any CPU"
+ 
+      # =========================
+      # 5. Verify ISPAC output
+      # =========================
+      - name: List build output
+        run: |
+          dir /s bin
