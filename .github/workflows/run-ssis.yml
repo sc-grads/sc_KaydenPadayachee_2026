@@ -20,4 +20,5 @@ jobs:
           $job = "Run_Timesheet_ETL"
  
           Invoke-Sqlcmd -ServerInstance $server `
-                        -Query "EXEC msdb.dbo.sp_start_job N'$job';"
+              -TrustServerCertificate `
+              -Query "EXEC msdb.dbo.sp_start_job @job_name = N'$job';"
