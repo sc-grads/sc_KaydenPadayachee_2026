@@ -17,7 +17,7 @@ jobs:
           Import-Module SqlServer
  
           $server = "localhost\SQLSERVER2025"
-          $job = "Run_Timesheet_ETL"
+          $job = "Run_Timesheet_Job"
  
           $user = "ssis_user"
           $pass = "Strong@12345!"
