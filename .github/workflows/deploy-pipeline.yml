@@ -45,7 +45,7 @@ jobs:
         # 🚀 Fixed: Placed command onto a fresh line with explicit quotes for parameter evaluation
         & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
  
-        $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\bin\Development\ProjectTime.ispac"
+        $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
         if (Test-Path $targetIspacPath) {
             Write-Host "Success: .ispac deployment bundle created cleanly."
             echo "ISPAC_PATH=$targetIspacPath" | Out-File -FilePath $env:GITHUB_ENV -Append
