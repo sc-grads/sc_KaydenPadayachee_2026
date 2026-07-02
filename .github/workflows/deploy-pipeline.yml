@@ -9,7 +9,7 @@ on:
  
 jobs:
   build-and-deploy:
-    runs-on: self-hosted  # Targets your local machine's runner group
+    runs-on: [self-hosted, SAMBE2025001]
  
     steps:
     - name: Checkout Repository
@@ -23,13 +23,9 @@ jobs:
     - name: Ensure Database and Schema Tables Exist
       shell: powershell
       run: |
-        # 🚀 Path calibrated to your folder structure: 'Timesheet' containing 'ProjectTime'
-        # Adjust the file name below if your initialization script is named differently
         $sqlScriptFile = "${{ github.workspace }}\Timesheet\Create_Database_And_Tables.sql"
- 
-        # 🚀 Target updated to your specific named instance
         sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$sqlScriptFile"
-        if ($LASTEXITCODE -ne 0) { Throw "Database initialization script failed." }
+        if ($LASTEXITCODE -ne 0) { Throw "TimesheetDB initialization script failed." }
     # =========================================================================
     # PHASE 1: CONTINUOUS INTEGRATION (COMPILATION VIA DEVENV)
     # =========================================================================
@@ -53,11 +49,10 @@ jobs:
     - name: Build SSIS Project to ISPAC
       shell: powershell
       run: |
-        # 🚀 Adjusted to target your exact project path directory setup
         $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime.dtproj"
+        # 🚀 Fixed: Placed command onto a fresh line with explicit quotes for parameter evaluation
 & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
  
-        # 🚀 Verification path targeted explicitly to your ProjectTime output
         $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\bin\Development\ProjectTime.ispac"
         if (Test-Path $targetIspacPath) {
             Write-Host "Success: .ispac deployment bundle created cleanly."
@@ -105,7 +100,6 @@ jobs:
         $sqlQuery | Out-File -FilePath $sqlScriptPath -Encoding ascii -Force
  
         Write-Host "Executing deployment query directly via trusted local loopback..."
-        # 🚀 Routed straight to your SQL Server 2025 instance
         sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$sqlScriptPath"
  
         if ($LASTEXITCODE -ne 0) {
@@ -143,7 +137,6 @@ jobs:
             @on_success_action = 1, 
             @on_fail_action = 2,    
             @subsystem = N'SSIS',   
-            -- 🚀 Calibrated execution step targeting your folder paths and named server instance
             @command = N'/ISSERVER "\"\SSISDB\TimesheetAutomation\ProjectTime\Package.dtsx\"" /SERVER "\"DESKTOP-DBA1BPB\SQLSERVER2025\""',
             @database_name = N'master';
         EXEC dbo.sp_add_jobschedule 
@@ -151,19 +144,17 @@ jobs:
             @name = N'Timesheet_One_Minute_Interval_Schedule', 
             @enabled = 1, 
             @freq_type = 8,              
-            @freq_interval = 62,         -- Mon-Fri (2 + 4 + 8 + 16 + 32)
-            @freq_subday_type = 4,       -- Minutes
-            @freq_subday_interval = 1,   -- 1 Minute Loop
+            @freq_interval = 62,         
+            @freq_subday_type = 4,       
+            @freq_subday_interval = 1,   
             @freq_recurrence_factor = 1, 
-            @active_start_time = 080000, -- 08:00 AM
-            @active_end_time = 170000;   -- 05:00 PM
-        -- 🚀 Matches local instance framework topology
+            @active_start_time = 080000, 
+            @active_end_time = 170000;   
         EXEC dbo.sp_add_jobserver @job_name = N'Run_Timesheet_ETL_Job', @server_name = N'DESKTOP-DBA1BPB\SQLSERVER2025';
         "@
  
         $jobQuery | Out-File -FilePath $jobScriptPath -Encoding ascii -Force
  
-        # 🚀 Final step validation run directly against your instance targets
         sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$jobScriptPath"
         if ($LASTEXITCODE -ne 0) { Throw "Failed to build or schedule the SQL Server Agent Job." }
         if (Test-Path $jobScriptPath) { Remove-Item $jobScriptPath -Force }
