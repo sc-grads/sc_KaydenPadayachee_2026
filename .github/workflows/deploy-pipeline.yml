@@ -51,7 +51,7 @@ jobs:
       run: |
         $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime.dtproj"
         # 🚀 Fixed: Placed command onto a fresh line with explicit quotes for parameter evaluation
-& "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
+        & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
  
         $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\bin\Development\ProjectTime.ispac"
         if (Test-Path $targetIspacPath) {
@@ -75,7 +75,7 @@ jobs:
       shell: powershell
       run: |
         $projectPath = "${{ env.ISPAC_PATH }}"
-        $folderName = "TimesheetAutomation"
+        $folderName = "ETL"
         $projectName = "ProjectTime"
  
         Write-Host "Reading $projectName binary package data..."
@@ -137,7 +137,7 @@ jobs:
             @on_success_action = 1, 
             @on_fail_action = 2,    
             @subsystem = N'SSIS',   
-            @command = N'/ISSERVER "\"\SSISDB\TimesheetAutomation\ProjectTime\Package.dtsx\"" /SERVER "\"DESKTOP-DBA1BPB\SQLSERVER2025\""',
+            @command = N'/ISSERVER "\"\SSISDB\ETL\ProjectTime\Package.dtsx\"" /SERVER "\"DESKTOP-DBA1BPB\SQLSERVER2025\""',
             @database_name = N'master';
         EXEC dbo.sp_add_jobschedule 
             @job_name = N'Run_Timesheet_ETL_Job', 
