@@ -1,152 +1,258 @@
-name: Automation SSIS
+name: DevTest Then Production
  
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
  
 jobs:
-  build-and-deploy:
+ 
+  # =========================================================================
+  # JOB 1: DEVTEST (BUILD, DEPLOY LOCAL SSIS, CONFIGURE LOCAL AGENT JOB)
+  # =========================================================================
+  DevTest:
     runs-on: self-hosted
- 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        submodules: false  
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false  
  
-   
-    # =========================================================================
-    # PHASE 1: CONTINUOUS INTEGRATION (COMPILATION VIA DEVENV)
-    # =========================================================================
-    - name: Locate Visual Studio DevEnv Tool
-      shell: powershell
-      run: |
-        $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
-        if (-not $vsPath) {
-            $vsPath = & "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
-        }
-        $devenvDir = Split-Path $vsPath
-        $devenvCom = Join-Path $devenvDir "devenv.com"
+      # PHASE 1: COMPILATION
+      - name: Locate Visual Studio DevEnv Tool
+        shell: powershell
+        run: |
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
+          if (-not $vsPath) {
+              $vsPath = & "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
+          }
+          $devenvDir = Split-Path $vsPath
+          $devenvCom = Join-Path $devenvDir "devenv.com"
  
-        if (Test-Path $devenvCom) {
-            Write-Host "Found Visual Studio compiler at: $devenvCom"
-            echo "DEVENV_PATH=$devenvCom" | Out-File -FilePath $env:GITHUB_ENV -Append
-        } else {
-            Throw "CRITICAL ERROR: Visual Studio (devenv.com) was not found on this self-hosted runner."
-        }
+          if (Test-Path $devenvCom) {
+              Write-Host "Found Visual Studio compiler at: $devenvCom"
+              echo "DEVENV_PATH=$devenvCom" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              Throw "CRITICAL ERROR: Visual Studio (devenv.com) was not found on this self-hosted runner."
+          }
  
-    - name: Build SSIS Project to ISPAC
-      shell: powershell
-      run: |
-        $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
-        # 🚀 Fixed: Placed command onto a fresh line with explicit quotes for parameter evaluation
-        & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
+      - name: Build SSIS Project to ISPAC
+        shell: powershell
+        run: |
+          $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
+         & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
  
-        $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
-        if (Test-Path $targetIspacPath) {
-            Write-Host "Success: .ispac deployment bundle created cleanly."
-            echo "ISPAC_PATH=$targetIspacPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-        } else {
-            Throw "Build completed, but the compiled .ispac artifact was not found inside the target bin path."
-        }
+          $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
+          if (Test-Path $targetIspacPath) {
+              Write-Host "Success: .ispac deployment bundle created cleanly."
+              echo "ISPAC_PATH=$targetIspacPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              Throw "Build completed, but the compiled .ispac artifact was not found inside the target bin path."
+          }
  
-    - name: Upload Compiled Package Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ssis-deployment-package
-        path: ${{ env.ISPAC_PATH }}
+      - name: Upload Compiled Package Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ssis-deployment-package
+          path: ${{ env.ISPAC_PATH }}
  
-    # ==========================================================================
-    # PHASE 2: CONTINUOUS DEPLOYMENT (ZERO-PASSWORD INJECTION)
-    # =========================================================================
-    - name: Deploy to SSISDB Catalog
-      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-      shell: powershell
-      run: |
-        $projectPath = "${{ env.ISPAC_PATH }}"
-        $folderName = "ETL"
-        $projectName = "ProjectTime"
+      # PHASE 2: LOCAL SSIS DEPLOY
+      - name: Deploy to SSISDB Catalog
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        shell: powershell
+        run: |
+          $projectPath = "${{ env.ISPAC_PATH }}"
+          $folderName = "ETL"
+          $projectName = "ProjectTime"
  
-        Write-Host "Reading $projectName binary package data..."
-        $fileBytes = [System.IO.File]::ReadAllBytes($projectPath)
-        $hexString = "0x" + [System.BitConverter]::ToString($fileBytes).Replace("-", "")
+          Write-Host "Reading $projectName binary package data..."
+          $fileBytes = [System.IO.File]::ReadAllBytes($projectPath)
+          $hexString = "0x" + [System.BitConverter]::ToString($fileBytes).Replace("-", "")
  
-        $sqlScriptPath = "${{ github.workspace }}\deploy_execution_temp.sql"
+          $sqlScriptPath = "${{ github.workspace }}\deploy_execution_temp.sql"
+          $sqlQuery = @"
+          SET NOCOUNT ON;
+          IF NOT EXISTS (SELECT 1 FROM [SSISDB].[catalog].[folders] WHERE name = '$folderName')
+          BEGIN
+              EXEC [SSISDB].[catalog].[create_folder] @folder_name = '$folderName';
+          END
+          DECLARE @project_binary VARBINARY(MAX) = $hexString;
+          EXEC [SSISDB].[catalog].[deploy_project]
+              @folder_name = '$folderName',
+              @project_name = '$projectName',
+              @project_stream = @project_binary;
+          "@
  
-        $sqlQuery = @"
-        SET NOCOUNT ON;
-        IF NOT EXISTS (SELECT 1 FROM [SSISDB].[catalog].[folders] WHERE name = '$folderName')
-        BEGIN
-            EXEC [SSISDB].[catalog].[create_folder] @folder_name = '$folderName';
-        END
-        DECLARE @project_binary VARBINARY(MAX) = $hexString;
-        EXEC [SSISDB].[catalog].[deploy_project]
-            @folder_name = '$folderName',
-            @project_name = '$projectName',
-            @project_stream = @project_binary;
-        "@
+          $sqlQuery | Out-File -FilePath $sqlScriptPath -Encoding ascii -Force
+          Write-Host "Executing deployment query directly via trusted local loopback..."
+          sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$sqlScriptPath"
  
-        $sqlQuery | Out-File -FilePath $sqlScriptPath -Encoding ascii -Force
+          if ($LASTEXITCODE -ne 0) {
+              Throw "SQL deployment script failed during execution. Check SSMS catalog status."
+          }
+          Write-Host "SUCCESS: Deployment completed! Your SSIS project is now live in SSMS."
+          if (Test-Path $sqlScriptPath) { Remove-Item $sqlScriptPath -Force }
  
-        Write-Host "Executing deployment query directly via trusted local loopback..."
-        sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$sqlScriptPath"
+      # PHASE 3: LOCAL AGENT JOB SCHEDULE
+      - name: Configure 1-Minute SQL Agent Automated Scheduling Engine Job
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        shell: powershell
+        run: |
+          $jobScriptPath = "${{ github.workspace }}\agent_job_temp.sql"
+          $jobQuery = @"
+          USE msdb;
+          IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'Run_Timesheet_ETL_Job')
+          BEGIN
+              EXEC dbo.sp_delete_job @job_name = N'Run_Timesheet_ETL_Job', @delete_unused_schedule = 1;
+          END;
+          EXEC dbo.sp_add_job
+              @job_name = N'Run_Timesheet_ETL_Job',
+              @enabled = 1,
+              @description = N'Runs the automated timesheet SSIS project workflow completely hands-free.',
+              @category_name = N'[Uncategorized (Local)]',
+              @owner_login_name = N'sa';
+          EXEC msdb.dbo.sp_add_jobstep
+              @job_name = N'Run_Timesheet_ETL_Job',
+              @step_name = N'Execute_SSIS_Timesheet_Package',
+              @step_id = 1,
+              @cmdexec_success_code = 0,
+              @on_success_action = 1,
+              @on_fail_action = 2,    
+              @subsystem = N'SSIS',  
+              @command = N'/ISSERVER "\"\SSISDB\ETL\ProjectTime\Package.dtsx\"" /SERVER "\"DESKTOP-DBA1BPB\SQLSERVER2025\""',
+              @database_name = N'master';
+          EXEC dbo.sp_add_jobschedule
+              @job_name = N'Run_Timesheet_ETL_Job',
+              @name = N'Timesheet_One_Minute_Interval_Schedule',
+              @enabled = 1,
+              @freq_type = 8,              
+              @freq_interval = 62,        
+              @freq_subday_type = 4,      
+              @freq_subday_interval = 1,  
+              @freq_recurrence_factor = 1,
+              @active_start_time = 080000,
+              @active_end_time = 170000;  
+          EXEC dbo.sp_add_jobserver @job_name = N'Run_Timesheet_ETL_Job', @server_name = N'DESKTOP-DBA1BPB\SQLSERVER2025';
+          "@
  
-        if ($LASTEXITCODE -ne 0) {
-            Throw "SQL deployment script failed during execution. Check SSMS catalog status."
-        }
+          $jobQuery | Out-File -FilePath $jobScriptPath -Encoding ascii -Force
+          sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$jobScriptPath"
+          if ($LASTEXITCODE -ne 0) { Throw "Failed to build or schedule the SQL Server Agent Job." }
+          if (Test-Path $jobScriptPath) { Remove-Item $jobScriptPath -Force }
  
-        Write-Host "SUCCESS: Deployment completed! Your SSIS project is now live in SSMS."
-        if (Test-Path $sqlScriptPath) { Remove-Item $sqlScriptPath -Force }
-    # =========================================================================
-    # PHASE 3: CREATE AGENT JOB & SCHEDULE IT FOR MON-FRI, 8AM-5PM ON A 1-MIN LOOP
-    # =========================================================================
-    - name: Configure 1-Minute SQL Agent Automated Scheduling Engine Job
-      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-      shell: powershell
-      run: |
-        $jobScriptPath = "${{ github.workspace }}\agent_job_temp.sql"
+  # =========================================================================
+  # JOB 2: NOTIFY FOR PRODUCTION APPROVAL
+  # =========================================================================
+  notify-production-approval:
+    needs: DevTest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Production Approval Request
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "PRODUCTION SQL DEPLOYMENT APPROVAL REQUIRED",
+            "text": "**DevTest deployment completed successfully.**\n\nProduction deployment is now awaiting approval.\n\n**Requested by:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}\n**Run:** ${{ github.run_id }}\n\n[Open Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})",
+            "themeColor": "FFA500"
+          }' \
+          ${{ secrets.TEAMS_WEBHOOK }}
  
-        $jobQuery = @"
-        USE msdb;
-        IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'Run_Timesheet_ETL_Job')
-        BEGIN
-            EXEC dbo.sp_delete_job @job_name = N'Run_Timesheet_ETL_Job', @delete_unused_schedule = 1;
-        END;
-        EXEC dbo.sp_add_job 
-            @job_name = N'Run_Timesheet_ETL_Job', 
-            @enabled = 1, 
-            @description = N'Runs the automated timesheet SSIS project workflow completely hands-free.',
-            @category_name = N'[Uncategorized (Local)]',
-            @owner_login_name = N'sa';
-        EXEC msdb.dbo.sp_add_jobstep 
-            @job_name = N'Run_Timesheet_ETL_Job', 
-            @step_name = N'Execute_SSIS_Timesheet_Package', 
-            @step_id = 1, 
-            @cmdexec_success_code = 0, 
-            @on_success_action = 1, 
-            @on_fail_action = 2,    
-            @subsystem = N'SSIS',   
-            @command = N'/ISSERVER "\"\SSISDB\ETL\ProjectTime\Package.dtsx\"" /SERVER "\"DESKTOP-DBA1BPB\SQLSERVER2025\""',
-            @database_name = N'master';
-        EXEC dbo.sp_add_jobschedule 
-            @job_name = N'Run_Timesheet_ETL_Job', 
-            @name = N'Timesheet_One_Minute_Interval_Schedule', 
-            @enabled = 1, 
-            @freq_type = 8,              
-            @freq_interval = 62,         
-            @freq_subday_type = 4,       
-            @freq_subday_interval = 1,   
-            @freq_recurrence_factor = 1, 
-            @active_start_time = 080000, 
-            @active_end_time = 170000;   
-        EXEC dbo.sp_add_jobserver @job_name = N'Run_Timesheet_ETL_Job', @server_name = N'DESKTOP-DBA1BPB\SQLSERVER2025';
-        "@
+  # =========================================================================
+  # JOB 3: PRODUCTION DEPLOYMENT (PARTNER SERVER SYNC)
+  # =========================================================================
+  Production:
+    needs: notify-production-approval
+    environment: partner-sql  # This triggers GitHub's built-in UI manual approval gate
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
  
-        $jobQuery | Out-File -FilePath $jobScriptPath -Encoding ascii -Force
+      # PHASE 4: PARTNER DATABASE GENERATION
+      - name: Create Partner Database and Tables
+        env:
+          PARTNER_SERVER: ${{ secrets.PARTNER_DB_SERVER }}
+          PARTNER_PORT: ${{ secrets.PARTNER_DB_PORT }}
+          PARTNER_USER: ${{ secrets.PARTNER_DB_USER }}
+          PARTNER_PASSWORD: ${{ secrets.PARTNER_DB_PASSWORD }}
+        run: |
+          $scriptFile = "${{ github.workspace }}\database\Create_Database_And_Tables.sql"
+          if (!(Test-Path $scriptFile)) { throw "Create_Database_And_Tables.sql not found." }
  
-        sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$jobScriptPath"
-        if ($LASTEXITCODE -ne 0) { Throw "Failed to build or schedule the SQL Server Agent Job." }
-        if (Test-Path $jobScriptPath) { Remove-Item $jobScriptPath -Force }
+          Write-Host "Connecting to partner SQL Server..."
+          sqlcmd `
+              -S "$env:PARTNER_SERVER,$env:PARTNER_PORT" `
+              -U "$env:PARTNER_USER" `
+              -P "$env:PARTNER_PASSWORD" `
+              -d master `
+              -i "$scriptFile" `
+              -C `
+              -b
+ 
+          if ($LASTEXITCODE -ne 0) { throw "Failed creating database and tables on partner server." }
+          Write-Host "SUCCESS: Partner database and tables created."
+ 
+      # PHASE 5: DATA EXTRACTION & PUSH (BCP)
+      - name: Synchronize Data To Partner Database
+        env:
+          PARTNER_SERVER: ${{ secrets.PARTNER_DB_SERVER }}
+          PARTNER_PORT: ${{ secrets.PARTNER_DB_PORT }}
+          PARTNER_USER: ${{ secrets.PARTNER_DB_USER }}
+          PARTNER_PASSWORD: ${{ secrets.PARTNER_DB_PASSWORD }}
+        run: |
+          $exportFolder = "${{ github.workspace }}\PartnerSync"
+          if (!(Test-Path $exportFolder)) { New-Item -ItemType Directory -Path $exportFolder | Out-Null }
+ 
+          Write-Host "Exporting local data..."
+          sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -E -d TimesheetDB1 -Q "SET NOCOUNT ON; SELECT * FROM Client" -s "," -W -o "$exportFolder\Client.csv"
+          sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -E -d TimesheetDB1 -Q "SET NOCOUNT ON; SELECT * FROM Employee" -s "," -W -o "$exportFolder\Employee.csv"
+          sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -E -d TimesheetDB1 -Q "SET NOCOUNT ON; SELECT * FROM [Leave]" -s "," -W -o "$exportFolder\Leave.csv"
+          sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -E -d TimesheetDB1 -Q "SET NOCOUNT ON; SELECT * FROM Timesheet" -s "," -W -o "$exportFolder\Timesheet.csv"
+ 
+          Write-Host "Preparing partner database..."
+          sqlcmd -S "$env:PARTNER_SERVER,$env:PARTNER_PORT" -U "$env:PARTNER_USER" -P "$env:PARTNER_PASSWORD" -d TimesheetDB1 -Q "DELETE FROM Timesheet; DELETE FROM [Leave]; DELETE FROM Employee; DELETE FROM Client;" -C
+ 
+          Write-Host "Loading data into partner database..."
+          bcp TimesheetDB1.dbo.Client in "$exportFolder\Client.csv" -S "$env:PARTNER_SERVER,$env:PARTNER_PORT" -U "$env:PARTNER_USER" -P "$env:PARTNER_PASSWORD" -c -t"," -F 2
+          bcp TimesheetDB1.dbo.Employee in "$exportFolder\Employee.csv" -S "$env:PARTNER_SERVER,$env:PARTNER_PORT" -U "$env:PARTNER_USER" -P "$env:PARTNER_PASSWORD" -c -t"," -F 2
+          bcp TimesheetDB1.dbo.[Leave] in "$exportFolder\Leave.csv" -S "$env:PARTNER_SERVER,$env:PARTNER_PORT" -U "$env:PARTNER_USER" -P "$env:PARTNER_PASSWORD" -c -t"," -F 2
+          bcp TimesheetDB1.dbo.Timesheet in "$exportFolder\Timesheet.csv" -S "$env:PARTNER_SERVER,$env:PARTNER_PORT" -U "$env:PARTNER_USER" -P "$env:PARTNER_PASSWORD" -c -t"," -F 2
+          Write-Host "SUCCESS: Partner database synchronized."
+ 
+  # =========================================================================
+  # GLOBAL STATUS NOTIFICATIONS
+  # =========================================================================
+  notify-success:
+    needs: [DevTest, Production]
+    if: always() && needs.DevTest.result == 'success' && (needs.Production.result == 'success' || needs.Production.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Success Notification
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "SQL DEPLOYMENT SUCCESS / COMPLETED",
+            "text": "**Pipeline tasks successfully processed.**\nRun: ${{ github.run_id }}",
+            "themeColor": "00FF00"
+          }' \
+          ${{ secrets.TEAMS_WEBHOOK }}
+ 
+  notify-failure:
+    needs: [DevTest, Production]
+    if: always() && (needs.DevTest.result == 'failure' || needs.Production.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Failure Notification
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{
+            "title": "SQL DEPLOYMENT FAILED",
+            "text": "**One of the deployment jobs failed.**\n\nView logs:\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+            "themeColor": "FF0000"
+          }' \
+          ${{ secrets.TEAMS_WEBHOOK }}
