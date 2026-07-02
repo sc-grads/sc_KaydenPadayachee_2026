@@ -12,8 +12,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="252"
-  DTS:VersionGUID="{6EF143C0-0560-4508-A7A7-ADAAA32D2BF7}">
+  DTS:VersionBuild="276"
+  DTS:VersionGUID="{17E09A00-2E06-46D0-AE62-965A7EBC36E1}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -215,18 +215,18 @@
       <DTS:ObjectData>
         <SQLTask:SqlTaskData
           SQLTask:Connection="{CE1D72E8-76C3-4D81-A71D-A5A06E325FC4}"
-          SQLTask:SqlStatementSource="-- ==========================================&#xA;-- 1. DATABASE SETUP&#xA;-- ==========================================&#xA;IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TimesheetDB1')&#xA;BEGIN&#xA;    CREATE DATABASE TimesheetDB1;&#xA;END;&#xA;GO&#xA; &#xA;USE TimesheetDB1;&#xA;GO&#xA; &#xA;-- ==========================================&#xA;-- 2. MASTER &amp; DIMENSION TABLES&#xA;-- ==========================================&#xA;IF OBJECT_ID('dbo.AuditLog', 'U') IS NULL &#xA;BEGIN&#xA;CREATE TABLE dbo.AuditLog (&#xA;    AuditID INT IDENTITY(1,1) CONSTRAINT PK_AuditLog PRIMARY KEY,&#xA;    PackageName NVARCHAR(100) NOT NULL CONSTRAINT DF_AuditLog_Pkg DEFAULT 'GraduateTimesheet_ETL',&#xA;    TaskName NVARCHAR(100) NOT NULL CONSTRAINT DF_AuditLog_Task DEFAULT 'Clean and Normalize Core Tables',&#xA;    FileName NVARCHAR(260) NULL,&#xA;    RowsStaged INT NOT NULL CONSTRAINT DF_AuditLog_Staged DEFAULT 0,&#xA;    InsertsProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Inserts DEFAULT 0,&#xA;    UpdatesProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Updates DEFAULT 0,&#xA;    DeletesProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Deletes DEFAULT 0,&#xA;    LeaveRowsProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Leave DEFAULT 0,&#xA;    Status NVARCHAR(20) NOT NULL,&#xA;    [Message] NVARCHAR(MAX) NULL,&#xA;    LogTimestamp DATETIME CONSTRAINT DF_AuditLog_Time DEFAULT GETDATE(),&#xA;    ExecutedBy NVARCHAR(100) NOT NULL CONSTRAINT DF_AuditLog_User DEFAULT SYSTEM_USER&#xA;);&#xA; &#xA;ALTER TABLE dbo.AuditLog ADD CONSTRAINT CK_AuditLog_Status CHECK (Status IN ('Running', 'Success', 'Failed'));&#xA;END&#xA;GO&#xA; &#xA;IF OBJECT_ID('dbo.Client', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Client (&#xA;        ClientID INT IDENTITY(1,1) CONSTRAINT PK_Client PRIMARY KEY,&#xA;        ClientName VARCHAR(200) NOT NULL&#xA;    );&#xA;END;&#xA; &#xA;IF OBJECT_ID('dbo.Employee', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Employee (&#xA;        EmployeeID INT IDENTITY(1,1) CONSTRAINT PK_Employee PRIMARY KEY,&#xA;        FirstName NVARCHAR(150) NOT NULL,&#xA;        LastName NVARCHAR(150) NULL&#xA;    );&#xA;END;&#xA; &#xA; &#xA; &#xA;-- ==========================================&#xA;-- 3. FACT &amp; TRANSACTION TABLES&#xA;-- ==========================================&#xA;IF OBJECT_ID('dbo.Leave', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Leave (&#xA;        LeaveID INT IDENTITY(1,1) CONSTRAINT PK_Leave PRIMARY KEY,&#xA;        EmployeeID INT NULL CONSTRAINT FK_Leave_Employee FOREIGN KEY REFERENCES dbo.Employee(EmployeeID), -- Brand new normalization fix&#xA;        LeaveDate DATE NULL,&#xA;        LeaveType NVARCHAR(250) NOT NULL,&#xA;        TotalHours NVARCHAR(50) NULL, -- Maintained original tracking string format&#xA;        AuditID INT NULL&#xA;    );&#xA;END;&#xA; &#xA;IF OBJECT_ID('dbo.StagingTimesheet', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.StagingTimesheet (&#xA;        StagingID INT IDENTITY(1,1) CONSTRAINT PK_StagingTimesheet PRIMARY KEY,&#xA;        EmployeeSourceFile NVARCHAR(MAX),&#xA;        RawDate NVARCHAR(50),&#xA;        RawDayOfWeek NVARCHAR(50),&#xA;        RawClient NVARCHAR(150),&#xA;        RawProjectName NVARCHAR(150),&#xA;        RawDescription NVARCHAR(MAX),&#xA;        RawBillableStatus NVARCHAR(50),&#xA;        RawComments NVARCHAR(MAX),&#xA;        RawTotalHours NVARCHAR(50),&#xA;        RawStartTime NVARCHAR(50),&#xA;        RawEndTime NVARCHAR(50),&#xA;        EmployeeName NVARCHAR(MAX)&#xA;    );&#xA;END;&#xA; &#xA;IF OBJECT_ID('dbo.Timesheet', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Timesheet (&#xA;        TimesheetID INT IDENTITY(1,1) CONSTRAINT PK_Timesheet PRIMARY KEY,&#xA;        EmployeeID INT NULL CONSTRAINT FK_Timesheet_Employee FOREIGN KEY REFERENCES dbo.Employee(EmployeeID),&#xA;        ClientID INT NULL CONSTRAINT FK_Timesheet_Client FOREIGN KEY REFERENCES dbo.Client(ClientID),&#xA;        WorkDate DATE NULL,&#xA;        DayOfWeek NVARCHAR(50) NULL,         &#xA;        BillableStatus NVARCHAR(50) NULL,    &#xA;        StartTime TIME NULL,&#xA;        EndTime TIME NULL,&#xA;        TotalHours NVARCHAR(50) NULL, &#xA;        TaskDescription NVARCHAR(MAX) NULL,&#xA;        Comments NVARCHAR(MAX) NULL,&#xA;        AuditID INT NULL,                  &#xA;        LastUpdatedDate DATETIME CONSTRAINT DF_Timesheet_LastUpdate DEFAULT GETDATE()&#xA;    );&#xA;END;&#xA; &#xA;-- ==========================================&#xA;-- 4. INITIALIZATION STEP&#xA;-- ==========================================&#xA;TRUNCATE TABLE dbo.StagingTimesheet;&#xA;GO" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+          SQLTask:SqlStatementSource="&#xA;&#xA;&#xA;-- ==========================================&#xA;-- 1. DATABASE SETUP&#xA;-- ==========================================&#xA;IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TimesheetDB1')&#xA;BEGIN&#xA;    CREATE DATABASE TimesheetDB1;&#xA;END;&#xA;GO&#xA; &#xA;USE TimesheetDB1;&#xA;GO&#xA; &#xA;&#xA;TRUNCATE TABLE dbo.StagingTimesheet;&#xA;-- ==========================================&#xA;-- 2. MASTER &amp; DIMENSION TABLES&#xA;-- ==========================================&#xA;IF OBJECT_ID('dbo.AuditLog', 'U') IS NULL &#xA;BEGIN&#xA;CREATE TABLE dbo.AuditLog (&#xA;    AuditID INT IDENTITY(1,1) CONSTRAINT PK_AuditLog PRIMARY KEY,&#xA;    PackageName NVARCHAR(100) NOT NULL CONSTRAINT DF_AuditLog_Pkg DEFAULT 'GraduateTimesheet_ETL',&#xA;    TaskName NVARCHAR(100) NOT NULL CONSTRAINT DF_AuditLog_Task DEFAULT 'Clean and Normalize Core Tables',&#xA;    FileName NVARCHAR(260) NULL,&#xA;    RowsStaged INT NOT NULL CONSTRAINT DF_AuditLog_Staged DEFAULT 0,&#xA;    InsertsProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Inserts DEFAULT 0,&#xA;    UpdatesProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Updates DEFAULT 0,&#xA;    DeletesProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Deletes DEFAULT 0,&#xA;    LeaveRowsProcessed INT NOT NULL CONSTRAINT DF_AuditLog_Leave DEFAULT 0,&#xA;    Status NVARCHAR(20) NOT NULL,&#xA;    [Message] NVARCHAR(MAX) NULL,&#xA;    LogTimestamp DATETIME CONSTRAINT DF_AuditLog_Time DEFAULT GETDATE(),&#xA;    ExecutedBy NVARCHAR(100) NOT NULL CONSTRAINT DF_AuditLog_User DEFAULT SYSTEM_USER&#xA;);&#xA; &#xA;ALTER TABLE dbo.AuditLog ADD CONSTRAINT CK_AuditLog_Status CHECK (Status IN ('Running', 'Success', 'Failed'));&#xA;END&#xA;GO&#xA; &#xA;IF OBJECT_ID('dbo.Client', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Client (&#xA;        ClientID INT IDENTITY(1,1) CONSTRAINT PK_Client PRIMARY KEY,&#xA;        ClientName VARCHAR(200) NOT NULL&#xA;    );&#xA;END;&#xA; &#xA;IF OBJECT_ID('dbo.Employee', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Employee (&#xA;        EmployeeID INT IDENTITY(1,1) CONSTRAINT PK_Employee PRIMARY KEY,&#xA;        FirstName NVARCHAR(150) NOT NULL,&#xA;        LastName NVARCHAR(150) NULL&#xA;    );&#xA;END;&#xA; &#xA; &#xA; &#xA;-- ==========================================&#xA;-- 3. Leave&#xA;-- ==========================================&#xA;IF OBJECT_ID('dbo.Leave', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Leave (&#xA;        LeaveID INT IDENTITY(1,1) CONSTRAINT PK_Leave PRIMARY KEY,&#xA;        EmployeeID INT NULL CONSTRAINT FK_Leave_Employee FOREIGN KEY REFERENCES dbo.Employee(EmployeeID), -- Brand new normalization fix&#xA;        LeaveDate DATE NULL,&#xA;        LeaveType NVARCHAR(250) NOT NULL&#xA;    --    TotalHours NVARCHAR(50) NULL -- Maintained original tracking string format&#xA;        &#xA;    );&#xA;END;&#xA; &#xA;IF OBJECT_ID('dbo.StagingTimesheet', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.StagingTimesheet (&#xA;        StagingID INT IDENTITY(1,1) CONSTRAINT PK_StagingTimesheet PRIMARY KEY,&#xA;        EmployeeSourceFile NVARCHAR(MAX),&#xA;        RawDate NVARCHAR(50),&#xA;        RawDayOfWeek NVARCHAR(50),&#xA;        RawClient NVARCHAR(150),&#xA;        RawProjectName NVARCHAR(150),&#xA;        RawDescription NVARCHAR(MAX),&#xA;        RawBillableStatus NVARCHAR(50),&#xA;        RawComments NVARCHAR(MAX),&#xA;        RawTotalHours NVARCHAR(50),&#xA;        RawStartTime NVARCHAR(50),&#xA;        RawEndTime NVARCHAR(50),&#xA;        EmployeeName NVARCHAR(MAX)&#xA;    );&#xA;END;&#xA; &#xA;IF OBJECT_ID('dbo.Timesheet', 'U') IS NULL&#xA;BEGIN&#xA;    CREATE TABLE dbo.Timesheet (&#xA;        TimesheetID INT IDENTITY(1,1) CONSTRAINT PK_Timesheet PRIMARY KEY,&#xA;        EmployeeID INT NULL CONSTRAINT FK_Timesheet_Employee FOREIGN KEY REFERENCES dbo.Employee(EmployeeID),&#xA;        ClientID INT NULL CONSTRAINT FK_Timesheet_Client FOREIGN KEY REFERENCES dbo.Client(ClientID),&#xA;        WorkDate DATE NULL,&#xA;        DayOfWeek NVARCHAR(50) NULL,         &#xA;        BillableStatus NVARCHAR(50) NULL,    &#xA;        StartTime TIME NULL,&#xA;        EndTime TIME NULL,&#xA;        TotalHours NVARCHAR(50) NULL, &#xA;        TaskDescription NVARCHAR(MAX) NULL,&#xA;        Comments NVARCHAR(MAX) NULL,&#xA;                         &#xA;        LastUpdatedDate DATETIME CONSTRAINT DF_Timesheet_LastUpdate DEFAULT GETDATE()&#xA;    );&#xA;END;&#xA; &#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
       </DTS:ObjectData>
     </DTS:Executable>
     <DTS:Executable
-      DTS:refId="Package\Foreach Loop Container2"
+      DTS:refId="Package\Loops through Files and folders"
       DTS:CreationName="STOCK:FOREACHLOOP"
       DTS:DelayValidation="True"
       DTS:Description="Foreach Loop Container"
       DTS:DTSID="{D8712818-B387-452D-A3D0-3A4949FB285A}"
       DTS:ExecutableType="STOCK:FOREACHLOOP"
       DTS:LocaleID="-1"
-      DTS:ObjectName="Foreach Loop Container2">
+      DTS:ObjectName="Loops through Files and folders">
       <DTS:ForEachEnumerator
         DTS:CreationName="Microsoft.ForEachFileEnumerator"
         DTS:DTSID="{CFF0D8D4-07B2-464A-8BC2-4EE9C0C3E6CD}"
@@ -249,7 +249,7 @@
       <DTS:Variables />
       <DTS:Executables>
         <DTS:Executable
-          DTS:refId="Package\Foreach Loop Container2\Expression Task"
+          DTS:refId="Package\Loops through Files and folders\Expression Task"
           DTS:CreationName="Microsoft.ExpressionTask"
           DTS:Description="Expression Task"
           DTS:DTSID="{074B5FC5-1E4D-4B01-92AF-F5CF7E6DE936}"
@@ -265,7 +265,7 @@
           </DTS:ObjectData>
         </DTS:Executable>
         <DTS:Executable
-          DTS:refId="Package\Foreach Loop Container2\Get names"
+          DTS:refId="Package\Loops through Files and folders\Get names"
           DTS:CreationName="Microsoft.ExecuteSQLTask"
           DTS:Description="Execute SQL Task"
           DTS:DTSID="{CACF6643-4C51-4F7D-83D2-7A28913C153C}"
@@ -295,7 +295,7 @@
           </DTS:ObjectData>
         </DTS:Executable>
         <DTS:Executable
-          DTS:refId="Package\Foreach Loop Container2\Populating tables"
+          DTS:refId="Package\Loops through Files and folders\Populating tables"
           DTS:CreationName="Microsoft.ExecuteSQLTask"
           DTS:Description="Execute SQL Task"
           DTS:DTSID="{1D7C8E5F-914E-4BE5-B1A7-44ACD3A3DDEF}"
@@ -308,11 +308,11 @@
           <DTS:ObjectData>
             <SQLTask:SqlTaskData
               SQLTask:Connection="{F6973623-8840-45BE-BDE7-396DC71F92C6}"
-              SQLTask:SqlStatementSource="USE TimesheetDB1;&#xA;GO&#xA; &#xA;-- ==========================================&#xA;-- PRE-EXECUTION: FILE IDENTIFICATION&#xA;-- ==========================================&#xA;DECLARE @FullFilePath NVARCHAR(MAX) = '';&#xA;DECLARE @FileName NVARCHAR(260) = 'Unknown_File';&#xA; &#xA;SELECT TOP 1 @FullFilePath = EmployeeSourceFile &#xA;FROM dbo.StagingTimesheet &#xA;WHERE EmployeeSourceFile IS NOT NULL;&#xA; &#xA;IF @FullFilePath &lt;&gt; ''&#xA;BEGIN&#xA;    SET @FileName = CASE &#xA;        WHEN CHARINDEX('\', @FullFilePath) &gt; 0 &#xA;        THEN RIGHT(@FullFilePath, CHARINDEX('\', REVERSE(@FullFilePath)) - 1) &#xA;        ELSE @FullFilePath &#xA;    END;&#xA;END;&#xA; &#xA;DECLARE @RowsStaged INT = 0;&#xA;DECLARE @TSInserted INT = 0;&#xA;DECLARE @TSUpdated INT = 0;&#xA;DECLARE @TSDeleted INT = 0;&#xA;DECLARE @LeaveInserted INT = 0;&#xA;DECLARE @CurrentAuditID INT = 0;&#xA; &#xA;SELECT @RowsStaged = COUNT(*) FROM dbo.StagingTimesheet;&#xA; &#xA;DECLARE @ActionTracker TABLE (ActionType VARCHAR(20));&#xA;DECLARE @LeaveTracker TABLE (ActionType VARCHAR(20));&#xA; &#xA;BEGIN TRANSACTION;&#xA;BEGIN TRY&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 1: INITIALIZE AUDIT ENTRY&#xA;    -- ==========================================&#xA;    INSERT INTO dbo.AuditLog (FileName, RowsStaged, Status, [Message], LogTimestamp)&#xA;    VALUES (@FileName, @RowsStaged, 'Running', 'Processing data pipelines...', GETDATE());&#xA; &#xA;    SET @CurrentAuditID = SCOPE_IDENTITY();&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 2: POPULATE DIMENSIONS (SPLIT ON THE FLY)&#xA;    -- ==========================================&#xA;    ;WITH ParsedStagingEmployees AS (&#xA;        SELECT DISTINCT &#xA;            EmployeeName,&#xA;            CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))) &gt; 0 &#xA;                THEN LEFT(LTRIM(RTRIM(EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))) - 1)&#xA;                ELSE LTRIM(RTRIM(EmployeeName))&#xA;            END AS CleanedFirstName,&#xA;            CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))) &gt; 0 &#xA;                THEN RIGHT(LTRIM(RTRIM(EmployeeName)), LEN(LTRIM(RTRIM(EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))))&#xA;                ELSE ''&#xA;            END AS CleanedLastName&#xA;        FROM dbo.StagingTimesheet&#xA;        WHERE EmployeeName IS NOT NULL AND EmployeeName &lt;&gt; ''&#xA;    )&#xA;    INSERT INTO dbo.Employee (FirstName, LastName)&#xA;    SELECT p.CleanedFirstName, p.CleanedLastName &#xA;    FROM ParsedStagingEmployees p&#xA;    WHERE NOT EXISTS (&#xA;        SELECT 1 FROM dbo.Employee e &#xA;        WHERE e.FirstName = p.CleanedFirstName AND ISNULL(e.LastName, '') = p.CleanedLastName&#xA;    );&#xA; &#xA;    INSERT INTO Client (ClientName)&#xA;    SELECT DISTINCT ISNULL(NULLIF(LTRIM(RTRIM(RawClient)), ''), 'Internal') FROM StagingTimesheet&#xA;    WHERE RawClient IS NOT NULL AND RawClient &lt;&gt; ''&#xA;      AND NOT EXISTS (SELECT 1 FROM Client c WHERE c.ClientName = ISNULL(NULLIF(LTRIM(RTRIM(StagingTimesheet.RawClient)), ''), 'Internal'));&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 3: MERGE FACT LEAVE&#xA;    -- ==========================================&#xA;    ;WITH DeduplicatedLeave AS (&#xA;        SELECT &#xA;            e.EmployeeID, &#xA;            TRY_CAST(st.RawDate AS DATE) AS LeaveDate,&#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawDescription)), ''), ISNULL(NULLIF(LTRIM(RTRIM(st.RawClient)), ''), 'General Leave')) AS LeaveType,&#xA;            st.RawTotalHours AS TotalHours, &#xA;            ROW_NUMBER() OVER (&#xA;                PARTITION BY e.EmployeeID, TRY_CAST(st.RawDate AS DATE) &#xA;                ORDER BY st.StagingID DESC&#xA;            ) as RowNum&#xA;        FROM StagingTimesheet st&#xA;        INNER JOIN dbo.Employee e ON &#xA;            e.FirstName = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN LEFT(LTRIM(RTRIM(st.EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) - 1)&#xA;                ELSE LTRIM(RTRIM(st.EmployeeName)) END&#xA;            AND ISNULL(e.LastName, '') = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN RIGHT(LTRIM(RTRIM(st.EmployeeName)), LEN(LTRIM(RTRIM(st.EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))))&#xA;                ELSE '' END&#xA;        WHERE st.RawDate IS NOT NULL AND TRY_CAST(st.RawDate AS DATE) IS NOT NULL&#xA;          AND (LOWER(ISNULL(st.RawDescription, '')) LIKE '%leave%' OR LOWER(ISNULL(st.RawClient, '')) LIKE '%leave%')&#xA;          AND DATEPART(dw, TRY_CAST(st.RawDate AS DATE)) NOT IN (1, 7)&#xA;          AND LOWER(ISNULL(st.RawDescription, '')) &lt;&gt; 'public holiday'&#xA;    )&#xA;    MERGE dbo.Leave AS target&#xA;    USING (&#xA;        SELECT * FROM DeduplicatedLeave WHERE RowNum = 1&#xA;    ) AS source&#xA;    ON (target.EmployeeID = source.EmployeeID AND target.LeaveDate = source.LeaveDate)&#xA;    WHEN MATCHED THEN&#xA;        UPDATE SET &#xA;            target.LeaveType = source.LeaveType,&#xA;            target.TotalHours = source.TotalHours,&#xA;            target.AuditID = @CurrentAuditID&#xA;    WHEN NOT MATCHED BY TARGET THEN&#xA;        INSERT (EmployeeID, LeaveDate, LeaveType, TotalHours, AuditID)&#xA;        VALUES (source.EmployeeID, source.LeaveDate, source.LeaveType, source.TotalHours, @CurrentAuditID)&#xA;    OUTPUT $action INTO @LeaveTracker;&#xA; &#xA;    SELECT @LeaveInserted = COUNT(*) FROM @LeaveTracker WHERE ActionType = 'INSERT';&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 4: MERGE FACT TIMESHEET&#xA;    -- ==========================================&#xA;    ;WITH DeduplicatedSource AS (&#xA;        SELECT &#xA;            e.EmployeeID, &#xA;            c.ClientID, &#xA;            TRY_CAST(st.RawDate AS DATE) AS WorkDate, &#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawDayOfWeek)), ''), DATENAME(weekday, TRY_CAST(st.RawDate AS DATE))) AS DayOfWeek,&#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawBillableStatus)), ''), 'Non-Billable') AS BillableStatus,&#xA;            TRY_CAST(st.RawStartTime AS TIME) AS StartTime, &#xA;            TRY_CAST(st.RawEndTime AS TIME) AS EndTime,&#xA;            st.RawTotalHours AS TotalHours, &#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawDescription)), ''), 'No description provided') AS TaskDescription,&#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawComments)), ''), 'None') AS Comments,&#xA;            ROW_NUMBER() OVER (&#xA;                PARTITION BY e.EmployeeID, TRY_CAST(st.RawDate AS DATE), TRY_CAST(st.RawStartTime AS TIME) &#xA;                ORDER BY st.StagingID DESC&#xA;            ) as RowNum&#xA;        FROM dbo.StagingTimesheet st&#xA;        INNER JOIN dbo.Employee e ON &#xA;            e.FirstName = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN LEFT(LTRIM(RTRIM(st.EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) - 1)&#xA;                ELSE LTRIM(RTRIM(st.EmployeeName)) END&#xA;            AND ISNULL(e.LastName, '') = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN RIGHT(LTRIM(RTRIM(st.EmployeeName)), LEN(LTRIM(RTRIM(st.EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))))&#xA;                ELSE '' END&#xA;        INNER JOIN dbo.Client c ON c.ClientName = ISNULL(NULLIF(LTRIM(RTRIM(st.RawClient)), ''), 'Internal')&#xA;        WHERE st.RawDate IS NOT NULL AND TRY_CAST(st.RawDate AS DATE) IS NOT NULL&#xA;          AND LOWER(ISNULL(st.RawDescription, '')) NOT LIKE '%leave%' AND LOWER(ISNULL(st.RawClient, '')) NOT LIKE '%leave%'&#xA;          AND DATEPART(dw, TRY_CAST(st.RawDate AS DATE)) NOT IN (1, 7) AND LOWER(ISNULL(st.RawDescription, '')) &lt;&gt; 'public holiday'&#xA;          AND LTRIM(RTRIM(ISNULL(st.RawStartTime, ''))) &lt;&gt; '' AND LTRIM(RTRIM(ISNULL(st.RawEndTime, ''))) &lt;&gt; '' AND LTRIM(RTRIM(ISNULL(st.RawDescription, ''))) &lt;&gt; ''&#xA;    )&#xA;    MERGE dbo.Timesheet AS target&#xA;    USING (&#xA;        SELECT * FROM DeduplicatedSource WHERE RowNum = 1&#xA;    ) AS source&#xA;    ON (target.EmployeeID = source.EmployeeID AND target.WorkDate = source.WorkDate AND target.StartTime = source.StartTime)&#xA; &#xA;    WHEN MATCHED AND (&#xA;        ISNULL(target.ClientID, 0) != ISNULL(source.ClientID, 0) OR&#xA;        ISNULL(target.EndTime, '00:00:00') != ISNULL(source.EndTime, '00:00:00') OR&#xA;        ISNULL(target.TotalHours, '') != ISNULL(source.TotalHours, '') OR&#xA;        ISNULL(target.TaskDescription, '') != ISNULL(source.TaskDescription, '') OR&#xA;        ISNULL(target.Comments, '') != ISNULL(source.Comments, '') OR&#xA;        ISNULL(target.BillableStatus, '') != ISNULL(source.BillableStatus, '') OR&#xA;        ISNULL(target.DayOfWeek, '') != ISNULL(source.DayOfWeek, '')&#xA;    ) THEN&#xA;        UPDATE SET &#xA;            target.ClientID = source.ClientID,&#xA;            target.EndTime = source.EndTime, &#xA;            target.TotalHours = source.TotalHours, &#xA;            target.TaskDescription = source.TaskDescription,&#xA;            target.Comments = source.Comments, &#xA;            target.BillableStatus = source.BillableStatus, &#xA;            target.DayOfWeek = source.DayOfWeek, &#xA;            target.AuditID = @CurrentAuditID,&#xA;            target.LastUpdatedDate = GETDATE()&#xA; &#xA;    WHEN NOT MATCHED BY TARGET THEN&#xA;        INSERT (EmployeeID, ClientID, WorkDate, DayOfWeek, BillableStatus, StartTime, EndTime, TotalHours, TaskDescription, Comments, AuditID)&#xA;        VALUES (source.EmployeeID, source.ClientID, source.WorkDate, source.DayOfWeek, source.BillableStatus, source.StartTime, source.EndTime, source.TotalHours, source.TaskDescription, source.Comments, @CurrentAuditID)&#xA; &#xA;    OUTPUT $action INTO @ActionTracker;&#xA; &#xA;    SELECT @TSInserted = COUNT(*) FROM @ActionTracker WHERE ActionType = 'INSERT';&#xA;    SELECT @TSUpdated = COUNT(*) FROM @ActionTracker WHERE ActionType = 'UPDATE';&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 5: HOUSEKEEPING DELETIONS&#xA;    -- ==========================================&#xA;    DELETE t&#xA;    FROM dbo.Timesheet t&#xA;    INNER JOIN dbo.StagingTimesheet st ON st.RawDate = CAST(t.WorkDate AS NVARCHAR(50))&#xA;    INNER JOIN dbo.Employee e ON e.EmployeeID = t.EmployeeID &#xA;        AND e.FirstName = CASE &#xA;            WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN LEFT(LTRIM(RTRIM(st.EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) - 1)&#xA;            ELSE LTRIM(RTRIM(st.EmployeeName)) END&#xA;        AND ISNULL(e.LastName, '') = CASE &#xA;            WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN RIGHT(LTRIM(RTRIM(st.EmployeeName)), LEN(LTRIM(RTRIM(st.EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))))&#xA;            ELSE '' END&#xA;    WHERE (st.RawTotalHours = '00:00' OR st.RawTotalHours = '0' OR st.RawTotalHours IS NULL)&#xA;      AND t.WorkDate = TRY_CAST(st.RawDate AS DATE) AND t.StartTime = TRY_CAST(st.RawStartTime AS TIME);&#xA; &#xA;    SET @TSDeleted = @@ROWCOUNT;&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 6: FINALIZE AUDIT LOG&#xA;    -- ==========================================&#xA;    UPDATE dbo.AuditLog&#xA;    SET InsertsProcessed = @TSInserted,&#xA;        UpdatesProcessed = @TSUpdated,&#xA;        DeletesProcessed = @TSDeleted,&#xA;        LeaveRowsProcessed = @LeaveInserted,&#xA;        Status = 'Success',&#xA;        [Message] = 'File execution metrics fully recorded with split employee names.'&#xA;    WHERE AuditID = @CurrentAuditID;&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 7: CYCLE INITIALIZATION&#xA;    -- ==========================================&#xA;    TRUNCATE TABLE dbo.StagingTimesheet;&#xA; &#xA;    COMMIT TRANSACTION;&#xA; &#xA;END TRY&#xA;BEGIN CATCH&#xA;    IF @@TRANCOUNT &gt; 0 ROLLBACK TRANSACTION;&#xA; &#xA;    IF @CurrentAuditID &gt; 0&#xA;    BEGIN&#xA;        UPDATE dbo.AuditLog&#xA;        SET Status = 'Failed', [Message] = 'CRITICAL PROCESSING FAILURE: ' + ERROR_MESSAGE()&#xA;        WHERE AuditID = @CurrentAuditID;&#xA;    END&#xA;    ELSE&#xA;    BEGIN&#xA;        INSERT INTO dbo.AuditLog (FileName, RowsStaged, Status, [Message], LogTimestamp)&#xA;        VALUES (@FileName, @RowsStaged, 'Failed', 'CRITICAL INITIALIZATION FAILURE: ' + ERROR_MESSAGE(), GETDATE());&#xA;    END;&#xA; &#xA;    THROW;&#xA;END CATCH;&#xA;GO" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+              SQLTask:SqlStatementSource="USE TimesheetDB1;&#xA;GO&#xA; &#xA;-- ==========================================&#xA;-- PRE-EXECUTION: FILE IDENTIFICATION&#xA;-- ==========================================&#xA;DECLARE @FullFilePath NVARCHAR(MAX) = '';&#xA;DECLARE @FileName NVARCHAR(260) = 'Unknown_File';&#xA; &#xA;SELECT TOP 1 @FullFilePath = EmployeeSourceFile &#xA;FROM dbo.StagingTimesheet &#xA;WHERE EmployeeSourceFile IS NOT NULL;&#xA; &#xA;IF @FullFilePath &lt;&gt; ''&#xA;BEGIN&#xA;    SET @FileName = CASE &#xA;        WHEN CHARINDEX('\', @FullFilePath) &gt; 0 &#xA;        THEN RIGHT(@FullFilePath, CHARINDEX('\', REVERSE(@FullFilePath)) - 1) &#xA;        ELSE @FullFilePath &#xA;    END;&#xA;END;&#xA; &#xA;DECLARE @RowsStaged INT = 0;&#xA;DECLARE @TSInserted INT = 0;&#xA;DECLARE @TSUpdated INT = 0;&#xA;DECLARE @TSDeleted INT = 0;&#xA;DECLARE @LeaveInserted INT = 0;&#xA;DECLARE @CurrentAuditID INT = 0;&#xA; &#xA;SELECT @RowsStaged = COUNT(*) FROM dbo.StagingTimesheet;&#xA; &#xA;DECLARE @ActionTracker TABLE (ActionType VARCHAR(20));&#xA;DECLARE @LeaveTracker TABLE (ActionType VARCHAR(20));&#xA; &#xA;BEGIN TRANSACTION;&#xA;BEGIN TRY&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 1: INITIALIZE AUDIT ENTRY&#xA;    -- ==========================================&#xA;    INSERT INTO dbo.AuditLog (FileName, RowsStaged, Status, [Message], LogTimestamp)&#xA;    VALUES (@FileName, @RowsStaged, 'Running', 'Processing data pipelines...', GETDATE());&#xA; &#xA;    SET @CurrentAuditID = SCOPE_IDENTITY();&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 2: POPULATE DIMENSIONS (SPLIT ON THE FLY)&#xA;    -- ==========================================&#xA;    ;WITH ParsedStagingEmployees AS (&#xA;        SELECT DISTINCT &#xA;            EmployeeName,&#xA;            CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))) &gt; 0 &#xA;                THEN LEFT(LTRIM(RTRIM(EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))) - 1)&#xA;                ELSE LTRIM(RTRIM(EmployeeName))&#xA;            END AS CleanedFirstName,&#xA;            CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))) &gt; 0 &#xA;                THEN RIGHT(LTRIM(RTRIM(EmployeeName)), LEN(LTRIM(RTRIM(EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(EmployeeName))))&#xA;                ELSE ''&#xA;            END AS CleanedLastName&#xA;        FROM dbo.StagingTimesheet&#xA;        WHERE EmployeeName IS NOT NULL AND EmployeeName &lt;&gt; ''&#xA;    )&#xA;    INSERT INTO dbo.Employee (FirstName, LastName)&#xA;    SELECT p.CleanedFirstName, p.CleanedLastName &#xA;    FROM ParsedStagingEmployees p&#xA;    WHERE NOT EXISTS (&#xA;        SELECT 1 FROM dbo.Employee e &#xA;        WHERE e.FirstName = p.CleanedFirstName AND ISNULL(e.LastName, '') = p.CleanedLastName&#xA;    );&#xA; &#xA;    INSERT INTO Client (ClientName)&#xA;    SELECT DISTINCT ISNULL(NULLIF(LTRIM(RTRIM(RawClient)), ''), 'Internal') FROM StagingTimesheet&#xA;    WHERE RawClient IS NOT NULL AND RawClient &lt;&gt; ''&#xA;      AND NOT EXISTS (SELECT 1 FROM Client c WHERE c.ClientName = ISNULL(NULLIF(LTRIM(RTRIM(StagingTimesheet.RawClient)), ''), 'Internal'));&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 3: MERGE FACT LEAVE&#xA;    -- ==========================================&#xA;    ;WITH DeduplicatedLeave AS (&#xA;        SELECT &#xA;            e.EmployeeID, &#xA;            TRY_CAST(st.RawDate AS DATE) AS LeaveDate,&#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawDescription)), ''), ISNULL(NULLIF(LTRIM(RTRIM(st.RawClient)), ''), 'General Leave')) AS LeaveType,&#xA;            ROW_NUMBER() OVER (&#xA;                PARTITION BY e.EmployeeID, TRY_CAST(st.RawDate AS DATE) &#xA;                ORDER BY st.StagingID DESC&#xA;            ) as RowNum&#xA;        FROM StagingTimesheet st&#xA;        INNER JOIN dbo.Employee e ON &#xA;            e.FirstName = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN LEFT(LTRIM(RTRIM(st.EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) - 1)&#xA;                ELSE LTRIM(RTRIM(st.EmployeeName)) END&#xA;            AND ISNULL(e.LastName, '') = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN RIGHT(LTRIM(RTRIM(st.EmployeeName)), LEN(LTRIM(RTRIM(st.EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))))&#xA;                ELSE '' END&#xA;        WHERE st.RawDate IS NOT NULL AND TRY_CAST(st.RawDate AS DATE) IS NOT NULL&#xA;          AND (LOWER(ISNULL(st.RawDescription, '')) LIKE '%leave%' OR LOWER(ISNULL(st.RawClient, '')) LIKE '%leave%')&#xA;          AND DATEPART(dw, TRY_CAST(st.RawDate AS DATE)) NOT IN (1, 7)&#xA;          AND LOWER(ISNULL(st.RawDescription, '')) &lt;&gt; 'public holiday'&#xA;    )&#xA;    MERGE dbo.Leave AS target&#xA;    USING (&#xA;        SELECT * FROM DeduplicatedLeave WHERE RowNum = 1&#xA;    ) AS source&#xA;    ON (target.EmployeeID = source.EmployeeID AND target.LeaveDate = source.LeaveDate)&#xA;    WHEN MATCHED THEN&#xA;        UPDATE SET &#xA;            target.LeaveType = source.LeaveType&#xA; &#xA;    WHEN NOT MATCHED BY TARGET THEN&#xA;        INSERT (EmployeeID, LeaveDate, LeaveType)&#xA;        VALUES (source.EmployeeID, source.LeaveDate, source.LeaveType)&#xA;    OUTPUT $action INTO @LeaveTracker;&#xA; &#xA;    SELECT @LeaveInserted = COUNT(*) FROM @LeaveTracker WHERE ActionType = 'INSERT';&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 4: MERGE FACT TIMESHEET&#xA;    -- ==========================================&#xA;    ;WITH DeduplicatedSource AS (&#xA;        SELECT &#xA;            e.EmployeeID, &#xA;            c.ClientID, &#xA;            TRY_CAST(st.RawDate AS DATE) AS WorkDate, &#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawDayOfWeek)), ''), DATENAME(weekday, TRY_CAST(st.RawDate AS DATE))) AS DayOfWeek,&#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawBillableStatus)), ''), 'Non-Billable') AS BillableStatus,&#xA;            TRY_CAST(st.RawStartTime AS TIME) AS StartTime, &#xA;            TRY_CAST(st.RawEndTime AS TIME) AS EndTime,&#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawDescription)), ''), 'No description provided') AS TaskDescription,&#xA;            ISNULL(NULLIF(LTRIM(RTRIM(st.RawComments)), ''), 'None') AS Comments,&#xA;            ROW_NUMBER() OVER (&#xA;                PARTITION BY e.EmployeeID, TRY_CAST(st.RawDate AS DATE), TRY_CAST(st.RawStartTime AS TIME) &#xA;                ORDER BY st.StagingID DESC&#xA;            ) as RowNum&#xA;        FROM dbo.StagingTimesheet st&#xA;        INNER JOIN dbo.Employee e ON &#xA;            e.FirstName = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN LEFT(LTRIM(RTRIM(st.EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) - 1)&#xA;                ELSE LTRIM(RTRIM(st.EmployeeName)) END&#xA;            AND ISNULL(e.LastName, '') = CASE &#xA;                WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN RIGHT(LTRIM(RTRIM(st.EmployeeName)), LEN(LTRIM(RTRIM(st.EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))))&#xA;                ELSE '' END&#xA;        INNER JOIN dbo.Client c ON c.ClientName = ISNULL(NULLIF(LTRIM(RTRIM(st.RawClient)), ''), 'Internal')&#xA;        WHERE st.RawDate IS NOT NULL AND TRY_CAST(st.RawDate AS DATE) IS NOT NULL&#xA;          AND LOWER(ISNULL(st.RawDescription, '')) NOT LIKE '%leave%' AND LOWER(ISNULL(st.RawClient, '')) NOT LIKE '%leave%'&#xA;          AND DATEPART(dw, TRY_CAST(st.RawDate AS DATE)) NOT IN (1, 7) AND LOWER(ISNULL(st.RawDescription, '')) &lt;&gt; 'public holiday'&#xA;          AND LTRIM(RTRIM(ISNULL(st.RawStartTime, ''))) &lt;&gt; '' AND LTRIM(RTRIM(ISNULL(st.RawEndTime, ''))) &lt;&gt; '' AND LTRIM(RTRIM(ISNULL(st.RawDescription, ''))) &lt;&gt; ''&#xA;    )&#xA;    MERGE dbo.Timesheet AS target&#xA;    USING (&#xA;        SELECT * FROM DeduplicatedSource WHERE RowNum = 1&#xA;    ) AS source&#xA;    ON (target.EmployeeID = source.EmployeeID AND target.WorkDate = source.WorkDate AND target.StartTime = source.StartTime)&#xA; &#xA;    WHEN MATCHED AND (&#xA;        ISNULL(target.ClientID, 0) != ISNULL(source.ClientID, 0) OR&#xA;        ISNULL(target.EndTime, '00:00:00') != ISNULL(source.EndTime, '00:00:00') OR&#xA;        ISNULL(target.TaskDescription, '') != ISNULL(source.TaskDescription, '') OR&#xA;        ISNULL(target.Comments, '') != ISNULL(source.Comments, '') OR&#xA;        ISNULL(target.BillableStatus, '') != ISNULL(source.BillableStatus, '') OR&#xA;        ISNULL(target.DayOfWeek, '') != ISNULL(source.DayOfWeek, '')&#xA;    ) THEN&#xA;        UPDATE SET &#xA;            target.ClientID = source.ClientID,&#xA;            target.EndTime = source.EndTime, &#xA;            target.TaskDescription = source.TaskDescription,&#xA;            target.Comments = source.Comments, &#xA;            target.BillableStatus = source.BillableStatus, &#xA;            target.DayOfWeek = source.DayOfWeek, &#xA;            target.LastUpdatedDate = GETDATE()&#xA; &#xA;    WHEN NOT MATCHED BY TARGET THEN&#xA;        INSERT (EmployeeID, ClientID, WorkDate, DayOfWeek, BillableStatus, StartTime, EndTime, TaskDescription, Comments)&#xA;        VALUES (source.EmployeeID, source.ClientID, source.WorkDate, source.DayOfWeek, source.BillableStatus, source.StartTime, source.EndTime, source.TaskDescription, source.Comments)&#xA; &#xA;    OUTPUT $action INTO @ActionTracker;&#xA; &#xA;    SELECT @TSInserted = COUNT(*) FROM @ActionTracker WHERE ActionType = 'INSERT';&#xA;    SELECT @TSUpdated = COUNT(*) FROM @ActionTracker WHERE ActionType = 'UPDATE';&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 5: HOUSEKEEPING DELETIONS&#xA;    -- ==========================================&#xA;    DELETE t&#xA;    FROM dbo.Timesheet t&#xA;    INNER JOIN dbo.StagingTimesheet st ON st.RawDate = CAST(t.WorkDate AS NVARCHAR(50))&#xA;    INNER JOIN dbo.Employee e ON e.EmployeeID = t.EmployeeID &#xA;        AND e.FirstName = CASE &#xA;            WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN LEFT(LTRIM(RTRIM(st.EmployeeName)), CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) - 1)&#xA;            ELSE LTRIM(RTRIM(st.EmployeeName)) END&#xA;        AND ISNULL(e.LastName, '') = CASE &#xA;            WHEN CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))) &gt; 0 THEN RIGHT(LTRIM(RTRIM(st.EmployeeName)), LEN(LTRIM(RTRIM(st.EmployeeName))) - CHARINDEX(' ', LTRIM(RTRIM(st.EmployeeName))))&#xA;            ELSE '' END&#xA;    WHERE (st.RawTotalHours = '00:00' OR st.RawTotalHours = '0' OR st.RawTotalHours IS NULL)&#xA;      AND t.WorkDate = TRY_CAST(st.RawDate AS DATE) AND t.StartTime = TRY_CAST(st.RawStartTime AS TIME);&#xA; &#xA;    SET @TSDeleted = @@ROWCOUNT;&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 6: CONDITIONAL AUDIT FINALIZE OR REMOVAL&#xA;    -- ==========================================&#xA;    IF (@TSInserted &gt; 0 OR @TSUpdated &gt; 0 OR @TSDeleted &gt; 0 OR @LeaveInserted &gt; 0)&#xA;    BEGIN&#xA;        -- Actual database modifications were detected; update and log success metrics.&#xA;        UPDATE dbo.AuditLog&#xA;        SET InsertsProcessed = @TSInserted,&#xA;            UpdatesProcessed = @TSUpdated,&#xA;            DeletesProcessed = @TSDeleted,&#xA;            LeaveRowsProcessed = @LeaveInserted,&#xA;            Status = 'Success',&#xA;            [Message] = 'File execution metrics fully recorded with split employee names.'&#xA;        WHERE AuditID = @CurrentAuditID;&#xA;    END&#xA;    ELSE&#xA;    BEGIN&#xA;        -- No data variations detected (0 inserts/updates/deletes); silent delete initialized placeholder log.&#xA;        DELETE FROM dbo.AuditLog&#xA;        WHERE AuditID = @CurrentAuditID;&#xA;    END;&#xA; &#xA;    -- ==========================================&#xA;    -- STEP 7: CYCLE INITIALIZATION&#xA;    -- ==========================================&#xA;    TRUNCATE TABLE dbo.StagingTimesheet;&#xA; &#xA;    COMMIT TRANSACTION;&#xA; &#xA;END TRY&#xA;BEGIN CATCH&#xA;    IF @@TRANCOUNT &gt; 0 ROLLBACK TRANSACTION;&#xA; &#xA;    IF @CurrentAuditID &gt; 0&#xA;    BEGIN&#xA;        UPDATE dbo.AuditLog&#xA;        SET Status = 'Failed', [Message] = 'CRITICAL PROCESSING FAILURE: ' + ERROR_MESSAGE()&#xA;        WHERE AuditID = @CurrentAuditID;&#xA;    END&#xA;    ELSE&#xA;    BEGIN&#xA;        INSERT INTO dbo.AuditLog (FileName, RowsStaged, Status, [Message], LogTimestamp)&#xA;        VALUES (@FileName, @RowsStaged, 'Failed', 'CRITICAL INITIALIZATION FAILURE: ' + ERROR_MESSAGE(), GETDATE());&#xA;    END;&#xA; &#xA;    THROW;&#xA;END CATCH;&#xA;GO" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
           </DTS:ObjectData>
         </DTS:Executable>
         <DTS:Executable
-          DTS:refId="Package\Foreach Loop Container2\Process files"
+          DTS:refId="Package\Loops through Files and folders\Process files"
           DTS:CreationName="Microsoft.Pipeline"
           DTS:DelayValidation="True"
           DTS:Description="Data Flow Task"
@@ -327,7 +327,7 @@
               version="1">
               <components>
                 <component
-                  refId="Package\Foreach Loop Container2\Process files\Data Conversion"
+                  refId="Package\Loops through Files and folders\Process files\Data Conversion"
                   componentClassID="Microsoft.DataConvert"
                   contactInfo="Data Conversion;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
                   description="Data Conversion"
@@ -335,83 +335,83 @@
                   usesDispositions="true">
                   <inputs>
                     <input
-                      refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input]"
+                      refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input]"
                       name="Data Conversion Input">
                       <inputColumns>
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Date]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Date]"
                           cachedDataType="date"
                           cachedName="Date"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[D of Week]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[D of Week]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="D of Week"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Client]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Client]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Client"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Client Project Name]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Client Project Name]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Client Project Name"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Description]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Description]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Description"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Billable or Non Billable]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Billable or Non Billable]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Billable or Non Billable"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Comments]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Comments]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Comments"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Total Hours]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Total Hours]"
                           cachedDataType="date"
                           cachedName="Total Hours"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Start Time]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[Start Time]"
                           cachedDataType="date"
                           cachedName="Start Time"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[End Time]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input].Columns[End Time]"
                           cachedDataType="date"
                           cachedName="End Time"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]" />
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]" />
                       </inputColumns>
                       <externalMetadataColumns />
                     </input>
                   </inputs>
                   <outputs>
                     <output
-                      refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output]"
+                      refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output]"
                       exclusionGroup="1"
                       name="Data Conversion Output"
-                      synchronousInputId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input]">
+                      synchronousInputId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input]">
                       <outputColumns>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Date]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Date]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="50"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Date]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Date]"
                           name="Copy of Date"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -419,7 +419,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -427,12 +427,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of D of Week]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of D of Week]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of D of Week]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of D of Week]"
                           name="Copy of D of Week"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -440,7 +440,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -448,12 +448,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client]"
                           name="Copy of Client"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -461,7 +461,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -469,12 +469,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client Project Name]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client Project Name]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client Project Name]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client Project Name]"
                           name="Copy of Client Project Name"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -482,7 +482,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -490,12 +490,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Description]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Description]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Description]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Description]"
                           name="Copy of Description"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -503,7 +503,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -511,12 +511,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Billable or Non Billable]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Billable or Non Billable]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Billable or Non Billable]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Billable or Non Billable]"
                           name="Copy of Billable or Non Billable"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -524,7 +524,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -532,12 +532,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Comments]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Comments]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Comments]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Comments]"
                           name="Copy of Comments"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -545,7 +545,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -553,12 +553,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Total Hours]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Total Hours]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="50"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Total Hours]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Total Hours]"
                           name="Copy of Total Hours"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -566,7 +566,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -574,12 +574,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Start Time]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Start Time]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="50"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Start Time]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Start Time]"
                           name="Copy of Start Time"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -587,7 +587,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -595,12 +595,12 @@
                           </properties>
                         </outputColumn>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of End Time]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of End Time]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
                           length="50"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of End Time]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of End Time]"
                           name="Copy of End Time"
                           truncationRowDisposition="FailComponent">
                           <properties>
@@ -608,7 +608,7 @@
                               containsID="true"
                               dataType="System.Int32"
                               description="Specifies the input column used as the source of data for the conversion."
-                              name="SourceInputColumnLineageID">#{Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]}</property>
+                              name="SourceInputColumnLineageID">#{Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]}</property>
                             <property
                               dataType="System.Boolean"
                               description="Indicates whether the column uses the faster, locale-neutral parsing routines."
@@ -619,22 +619,22 @@
                       <externalMetadataColumns />
                     </output>
                     <output
-                      refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Error Output]"
+                      refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Error Output]"
                       exclusionGroup="1"
                       isErrorOut="true"
                       name="Data Conversion Error Output"
-                      synchronousInputId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input]">
+                      synchronousInputId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input]">
                       <outputColumns>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorCode]"
                           name="ErrorCode"
                           specialFlags="1" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                          refId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Error Output].Columns[ErrorColumn]"
                           name="ErrorColumn"
                           specialFlags="2" />
                       </outputColumns>
@@ -643,7 +643,7 @@
                   </outputs>
                 </component>
                 <component
-                  refId="Package\Foreach Loop Container2\Process files\Derived Column"
+                  refId="Package\Loops through Files and folders\Process files\Derived Column"
                   componentClassID="Microsoft.DerivedColumn"
                   contactInfo="Derived Column;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;0"
                   description="Creates new column values by applying expressions to transformation input columns. Create new columns or overwrite existing ones. For example, concatenate the values from the 'first name' and 'last name' column to make a 'full name' column."
@@ -651,7 +651,7 @@
                   usesDispositions="true">
                   <inputs>
                     <input
-                      refId="Package\Foreach Loop Container2\Process files\Derived Column.Inputs[Derived Column Input]"
+                      refId="Package\Loops through Files and folders\Process files\Derived Column.Inputs[Derived Column Input]"
                       description="Input to the Derived Column Transformation"
                       name="Derived Column Input">
                       <externalMetadataColumns />
@@ -659,31 +659,31 @@
                   </inputs>
                   <outputs>
                     <output
-                      refId="Package\Foreach Loop Container2\Process files\Derived Column.Outputs[Derived Column Output]"
+                      refId="Package\Loops through Files and folders\Process files\Derived Column.Outputs[Derived Column Output]"
                       description="Default Output of the Derived Column Transformation"
                       exclusionGroup="1"
                       name="Derived Column Output"
-                      synchronousInputId="Package\Foreach Loop Container2\Process files\Derived Column.Inputs[Derived Column Input]">
+                      synchronousInputId="Package\Loops through Files and folders\Process files\Derived Column.Inputs[Derived Column Input]">
                       <externalMetadataColumns />
                     </output>
                     <output
-                      refId="Package\Foreach Loop Container2\Process files\Derived Column.Outputs[Derived Column Error Output]"
+                      refId="Package\Loops through Files and folders\Process files\Derived Column.Outputs[Derived Column Error Output]"
                       description="Error Output of the Derived Column Transformation"
                       exclusionGroup="1"
                       isErrorOut="true"
                       name="Derived Column Error Output"
-                      synchronousInputId="Package\Foreach Loop Container2\Process files\Derived Column.Inputs[Derived Column Input]">
+                      synchronousInputId="Package\Loops through Files and folders\Process files\Derived Column.Inputs[Derived Column Input]">
                       <outputColumns>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
+                          refId="Package\Loops through Files and folders\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
+                          lineageId="Package\Loops through Files and folders\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorCode]"
                           name="ErrorCode"
                           specialFlags="1" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
+                          refId="Package\Loops through Files and folders\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
+                          lineageId="Package\Loops through Files and folders\Process files\Derived Column.Outputs[Derived Column Error Output].Columns[ErrorColumn]"
                           name="ErrorColumn"
                           specialFlags="2" />
                       </outputColumns>
@@ -692,7 +692,7 @@
                   </outputs>
                 </component>
                 <component
-                  refId="Package\Foreach Loop Container2\Process files\Excel Source"
+                  refId="Package\Loops through Files and folders\Process files\Excel Source"
                   componentClassID="Microsoft.ExcelSource"
                   contactInfo="Excel Source;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;1"
                   description="Excel Source"
@@ -733,7 +733,7 @@
                   </properties>
                   <connections>
                     <connection
-                      refId="Package\Foreach Loop Container2\Process files\Excel Source.Connections[OleDbConnection]"
+                      refId="Package\Loops through Files and folders\Process files\Excel Source.Connections[OleDbConnection]"
                       connectionManagerID="Package.ConnectionManagers[Excel Connection Manager]"
                       connectionManagerRefId="Package.ConnectionManagers[Excel Connection Manager]"
                       description="The OLE DB runtime connection used to access the database."
@@ -741,227 +741,227 @@
                   </connections>
                   <outputs>
                     <output
-                      refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output]"
+                      refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output]"
                       name="Excel Source Output">
                       <outputColumns>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]"
                           dataType="date"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Date]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Date]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Date]"
                           name="Date"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[D of Week]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[D of Week]"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[D of Week]"
                           name="D of Week"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client]"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client]"
                           name="Client"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client Project Name]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client Project Name]"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Client Project Name]"
                           name="Client Project Name"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Description]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Description]"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Description]"
                           name="Description"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Billable or Non Billable]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Billable or Non Billable]"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Billable or Non Billable]"
                           name="Billable or Non Billable"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]"
                           dataType="wstr"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Comments]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Comments]"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Comments]"
                           name="Comments"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]"
                           dataType="date"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Total Hours]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Total Hours]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Total Hours]"
                           name="Total Hours"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]"
                           dataType="date"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Start Time]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Start Time]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[Start Time]"
                           name="Start Time"
                           truncationRowDisposition="FailComponent" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]"
                           dataType="date"
                           errorOrTruncationOperation="Conversion"
                           errorRowDisposition="FailComponent"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[End Time]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]"
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[End Time]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].Columns[End Time]"
                           name="End Time"
                           truncationRowDisposition="FailComponent" />
                       </outputColumns>
                       <externalMetadataColumns
                         isUsed="True">
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Date]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Date]"
                           dataType="date"
                           name="Date" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[D of Week]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[D of Week]"
                           dataType="wstr"
                           length="255"
                           name="D of Week" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client]"
                           dataType="wstr"
                           length="255"
                           name="Client" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client Project Name]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Client Project Name]"
                           dataType="wstr"
                           length="255"
                           name="Client Project Name" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Description]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Description]"
                           dataType="wstr"
                           length="255"
                           name="Description" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Billable or Non Billable]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Billable or Non Billable]"
                           dataType="wstr"
                           length="255"
                           name="Billable or Non Billable" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Comments]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Comments]"
                           dataType="wstr"
                           length="255"
                           name="Comments" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Total Hours]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Total Hours]"
                           dataType="date"
                           name="Total Hours" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Start Time]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[Start Time]"
                           dataType="date"
                           name="Start Time" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[End Time]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output].ExternalColumns[End Time]"
                           dataType="date"
                           name="End Time" />
                       </externalMetadataColumns>
                     </output>
                     <output
-                      refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output]"
+                      refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output]"
                       isErrorOut="true"
                       name="Excel Source Error Output">
                       <outputColumns>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Date]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Date]"
                           dataType="date"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Date]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Date]"
                           name="Date" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[D of Week]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[D of Week]"
                           dataType="wstr"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[D of Week]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[D of Week]"
                           name="D of Week" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client]"
                           dataType="wstr"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client]"
                           name="Client" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client Project Name]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client Project Name]"
                           dataType="wstr"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client Project Name]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Client Project Name]"
                           name="Client Project Name" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Description]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Description]"
                           dataType="wstr"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Description]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Description]"
                           name="Description" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Billable or Non Billable]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Billable or Non Billable]"
                           dataType="wstr"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Billable or Non Billable]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Billable or Non Billable]"
                           name="Billable or Non Billable" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Comments]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Comments]"
                           dataType="wstr"
                           length="255"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Comments]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Comments]"
                           name="Comments" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Total Hours]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Total Hours]"
                           dataType="date"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Total Hours]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Total Hours]"
                           name="Total Hours" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Start Time]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Start Time]"
                           dataType="date"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Start Time]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[Start Time]"
                           name="Start Time" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[End Time]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[End Time]"
                           dataType="date"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[End Time]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[End Time]"
                           name="End Time" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorCode]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorCode]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorCode]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorCode]"
                           name="ErrorCode"
                           specialFlags="1" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorColumn]"
+                          refId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorColumn]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorColumn]"
+                          lineageId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Error Output].Columns[ErrorColumn]"
                           name="ErrorColumn"
                           specialFlags="2" />
                       </outputColumns>
@@ -970,7 +970,7 @@
                   </outputs>
                 </component>
                 <component
-                  refId="Package\Foreach Loop Container2\Process files\OLE DB Destination"
+                  refId="Package\Loops through Files and folders\Process files\OLE DB Destination"
                   componentClassID="Microsoft.OLEDBDestination"
                   contactInfo="OLE DB Destination;Microsoft Corporation; Microsoft SQL Server; (C) Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
                   description="OLE DB Destination"
@@ -1027,7 +1027,7 @@
                   </properties>
                   <connections>
                     <connection
-                      refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Connections[OleDbConnection]"
+                      refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Connections[OleDbConnection]"
                       connectionManagerID="Package.ConnectionManagers[DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1]"
                       connectionManagerRefId="Package.ConnectionManagers[DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1]"
                       description="The OLE DB runtime connection used to access the database."
@@ -1035,143 +1035,143 @@
                   </connections>
                   <inputs>
                     <input
-                      refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input]"
+                      refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input]"
                       errorOrTruncationOperation="Insert"
                       errorRowDisposition="FailComponent"
                       hasSideEffects="true"
                       name="OLE DB Destination Input">
                       <inputColumns>
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Date]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Date]"
                           cachedDataType="wstr"
                           cachedLength="50"
                           cachedName="Copy of Date"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDate]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Date]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDate]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Date]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of D of Week]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of D of Week]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Copy of D of Week"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDayOfWeek]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of D of Week]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDayOfWeek]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of D of Week]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Client]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Client]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Copy of Client"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawClient]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawClient]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Client Project Name]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Client Project Name]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Copy of Client Project Name"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawProjectName]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client Project Name]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawProjectName]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Client Project Name]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Description]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Description]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Copy of Description"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDescription]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Description]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDescription]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Description]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Billable or Non Billable]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Billable or Non Billable]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Copy of Billable or Non Billable"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawBillableStatus]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Billable or Non Billable]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawBillableStatus]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Billable or Non Billable]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Comments]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Comments]"
                           cachedDataType="wstr"
                           cachedLength="255"
                           cachedName="Copy of Comments"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawComments]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Comments]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawComments]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Comments]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Total Hours]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Total Hours]"
                           cachedDataType="wstr"
                           cachedLength="50"
                           cachedName="Copy of Total Hours"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawTotalHours]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Total Hours]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawTotalHours]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Total Hours]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Start Time]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of Start Time]"
                           cachedDataType="wstr"
                           cachedLength="50"
                           cachedName="Copy of Start Time"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawStartTime]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Start Time]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawStartTime]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of Start Time]" />
                         <inputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of End Time]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[Copy of End Time]"
                           cachedDataType="wstr"
                           cachedLength="50"
                           cachedName="Copy of End Time"
-                          externalMetadataColumnId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawEndTime]"
-                          lineageId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of End Time]" />
+                          externalMetadataColumnId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawEndTime]"
+                          lineageId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output].Columns[Copy of End Time]" />
                       </inputColumns>
                       <externalMetadataColumns
                         isUsed="True">
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[StagingID]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[StagingID]"
                           dataType="i4"
                           name="StagingID" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[EmployeeSourceFile]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[EmployeeSourceFile]"
                           dataType="nText"
                           name="EmployeeSourceFile" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDate]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDate]"
                           dataType="wstr"
                           length="50"
                           name="RawDate" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDayOfWeek]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDayOfWeek]"
                           dataType="wstr"
                           length="50"
                           name="RawDayOfWeek" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawClient]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawClient]"
                           dataType="wstr"
                           length="150"
                           name="RawClient" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawProjectName]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawProjectName]"
                           dataType="wstr"
                           length="150"
                           name="RawProjectName" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDescription]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawDescription]"
                           dataType="nText"
                           name="RawDescription" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawBillableStatus]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawBillableStatus]"
                           dataType="wstr"
                           length="50"
                           name="RawBillableStatus" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawComments]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawComments]"
                           dataType="nText"
                           name="RawComments" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawTotalHours]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawTotalHours]"
                           dataType="wstr"
                           length="50"
                           name="RawTotalHours" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawStartTime]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawStartTime]"
                           dataType="wstr"
                           length="50"
                           name="RawStartTime" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawEndTime]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RawEndTime]"
                           dataType="wstr"
                           length="50"
                           name="RawEndTime" />
                         <externalMetadataColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[EmployeeName]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[EmployeeName]"
                           dataType="nText"
                           name="EmployeeName" />
                       </externalMetadataColumns>
@@ -1179,22 +1179,22 @@
                   </inputs>
                   <outputs>
                     <output
-                      refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output]"
+                      refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output]"
                       exclusionGroup="1"
                       isErrorOut="true"
                       name="OLE DB Destination Error Output"
-                      synchronousInputId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input]">
+                      synchronousInputId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input]">
                       <outputColumns>
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                          lineageId="Package\Loops through Files and folders\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
                           name="ErrorCode"
                           specialFlags="1" />
                         <outputColumn
-                          refId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          refId="Package\Loops through Files and folders\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
                           dataType="i4"
-                          lineageId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                          lineageId="Package\Loops through Files and folders\Process files\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
                           name="ErrorColumn"
                           specialFlags="2" />
                       </outputColumns>
@@ -1205,26 +1205,26 @@
               </components>
               <paths>
                 <path
-                  refId="Package\Foreach Loop Container2\Process files.Paths[Data Conversion Output]"
-                  endId="Package\Foreach Loop Container2\Process files\Derived Column.Inputs[Derived Column Input]"
+                  refId="Package\Loops through Files and folders\Process files.Paths[Data Conversion Output]"
+                  endId="Package\Loops through Files and folders\Process files\Derived Column.Inputs[Derived Column Input]"
                   name="Data Conversion Output"
-                  startId="Package\Foreach Loop Container2\Process files\Data Conversion.Outputs[Data Conversion Output]" />
+                  startId="Package\Loops through Files and folders\Process files\Data Conversion.Outputs[Data Conversion Output]" />
                 <path
-                  refId="Package\Foreach Loop Container2\Process files.Paths[Derived Column Output]"
-                  endId="Package\Foreach Loop Container2\Process files\OLE DB Destination.Inputs[OLE DB Destination Input]"
+                  refId="Package\Loops through Files and folders\Process files.Paths[Derived Column Output]"
+                  endId="Package\Loops through Files and folders\Process files\OLE DB Destination.Inputs[OLE DB Destination Input]"
                   name="Derived Column Output"
-                  startId="Package\Foreach Loop Container2\Process files\Derived Column.Outputs[Derived Column Output]" />
+                  startId="Package\Loops through Files and folders\Process files\Derived Column.Outputs[Derived Column Output]" />
                 <path
-                  refId="Package\Foreach Loop Container2\Process files.Paths[Excel Source Output]"
-                  endId="Package\Foreach Loop Container2\Process files\Data Conversion.Inputs[Data Conversion Input]"
+                  refId="Package\Loops through Files and folders\Process files.Paths[Excel Source Output]"
+                  endId="Package\Loops through Files and folders\Process files\Data Conversion.Inputs[Data Conversion Input]"
                   name="Excel Source Output"
-                  startId="Package\Foreach Loop Container2\Process files\Excel Source.Outputs[Excel Source Output]" />
+                  startId="Package\Loops through Files and folders\Process files\Excel Source.Outputs[Excel Source Output]" />
               </paths>
             </pipeline>
           </DTS:ObjectData>
         </DTS:Executable>
         <DTS:Executable
-          DTS:refId="Package\Foreach Loop Container2\Script Task"
+          DTS:refId="Package\Loops through Files and folders\Script Task"
           DTS:CreationName="Microsoft.ScriptTask"
           DTS:Description="Script Task"
           DTS:DTSID="{250E0F7A-01FF-42B7-B450-9AAEE7BAD280}"
@@ -1241,36 +1241,6 @@
               Language="CSharp"
               ReadOnlyVariables="User::CurrentFilePath,User::SheetName"
               ReadWriteVariables="User::ExtractedEmployeeName,User::ExtractedFileName">
-              <ProjectItem
-                Name="Properties\AssemblyInfo.cs"
-                Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_269e80e4cedd42058df596db3c025822")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ST_269e80e4cedd42058df596db3c025822")]
-[assembly: AssemblyCopyright("Copyright @  2026")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
               <ProjectItem
                 Name="Properties\Resources.resx"
                 Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -1390,6 +1360,35 @@ using System.Runtime.CompilerServices;
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
 </root>]]></ProjectItem>
+              <ProjectItem
+                Name="Properties\Settings.Designer.cs"
+                Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was generated by a tool.
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_269e80e4cedd42058df596db3c025822.Properties.Settings.get_Default():ST_269e80e4cedd42058df596db3c025822.Properties.Sett" +
+    "ings")]
+
+namespace ST_269e80e4cedd42058df596db3c025822.Properties {
+    
+    
+    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
+        
+        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
+        private static Settings defaultInstance = new Settings();
+        
+        public static Settings Default {
+            get {
+                return defaultInstance;
+            }
+        }
+    }
+}]]></ProjectItem>
               <ProjectItem
                 Name="ScriptMain.cs"
                 Encoding="UTF8"><![CDATA[#region Help:  Introduction to the script task
@@ -1627,34 +1626,35 @@ namespace ST_269e80e4cedd42058df596db3c025822
   </msb:ItemGroup>
 </c:Project>]]></ProjectItem>
               <ProjectItem
-                Name="Properties\Settings.Designer.cs"
-                Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
-// <auto-generated>
-//     This code was generated by a tool.
+                Name="Properties\AssemblyInfo.cs"
+                Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
 //
-//     Changes to this file may cause incorrect behavior and will be lost if
-//     the code is regenerated.
-// </auto-generated>
-//------------------------------------------------------------------------------
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_269e80e4cedd42058df596db3c025822")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("ST_269e80e4cedd42058df596db3c025822")]
+[assembly: AssemblyCopyright("Copyright @  2026")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
 
-[assembly: global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope="member", Target="ST_269e80e4cedd42058df596db3c025822.Properties.Settings.get_Default():ST_269e80e4cedd42058df596db3c025822.Properties.Sett" +
-    "ings")]
-
-namespace ST_269e80e4cedd42058df596db3c025822.Properties {
-    
-    
-    internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
-        
-        [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-        private static Settings defaultInstance = new Settings();
-        
-        public static Settings Default {
-            get {
-                return defaultInstance;
-            }
-        }
-    }
-}]]></ProjectItem>
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
               <ProjectItem
                 Name="Properties\Settings.settings"
                 Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
@@ -1856,37 +1856,37 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
       </DTS:Executables>
       <DTS:PrecedenceConstraints>
         <DTS:PrecedenceConstraint
-          DTS:refId="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint]"
+          DTS:refId="Package\Loops through Files and folders.PrecedenceConstraints[Constraint]"
           DTS:CreationName=""
           DTS:DTSID="{BE5A26A9-8170-4DAA-9441-051EF657AC47}"
-          DTS:From="Package\Foreach Loop Container2\Expression Task"
+          DTS:From="Package\Loops through Files and folders\Expression Task"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint"
-          DTS:To="Package\Foreach Loop Container2\Process files" />
+          DTS:To="Package\Loops through Files and folders\Process files" />
         <DTS:PrecedenceConstraint
-          DTS:refId="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint 1]"
+          DTS:refId="Package\Loops through Files and folders.PrecedenceConstraints[Constraint 1]"
           DTS:CreationName=""
           DTS:DTSID="{E8DD3A8E-D126-42FD-B728-2D1DA486B0F0}"
-          DTS:From="Package\Foreach Loop Container2\Script Task"
+          DTS:From="Package\Loops through Files and folders\Script Task"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint 1"
-          DTS:To="Package\Foreach Loop Container2\Expression Task" />
+          DTS:To="Package\Loops through Files and folders\Expression Task" />
         <DTS:PrecedenceConstraint
-          DTS:refId="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint 2]"
+          DTS:refId="Package\Loops through Files and folders.PrecedenceConstraints[Constraint 2]"
           DTS:CreationName=""
           DTS:DTSID="{F5FC17C5-0049-4FDE-973B-E3F271CB86EE}"
-          DTS:From="Package\Foreach Loop Container2\Process files"
+          DTS:From="Package\Loops through Files and folders\Process files"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint 2"
-          DTS:To="Package\Foreach Loop Container2\Get names" />
+          DTS:To="Package\Loops through Files and folders\Get names" />
         <DTS:PrecedenceConstraint
-          DTS:refId="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint 3]"
+          DTS:refId="Package\Loops through Files and folders.PrecedenceConstraints[Constraint 3]"
           DTS:CreationName=""
-          DTS:DTSID="{DF317AE2-EAAA-485D-BDEF-2A0B04E6BE85}"
-          DTS:From="Package\Foreach Loop Container2\Get names"
+          DTS:DTSID="{61DD5112-4F83-46BA-A4C6-25A0E2A8D8E4}"
+          DTS:From="Package\Loops through Files and folders\Get names"
           DTS:LogicalAnd="True"
           DTS:ObjectName="Constraint 3"
-          DTS:To="Package\Foreach Loop Container2\Populating tables" />
+          DTS:To="Package\Loops through Files and folders\Populating tables" />
       </DTS:PrecedenceConstraints>
       <DTS:ForEachVariableMappings>
         <DTS:ForEachVariableMapping
@@ -1906,7 +1906,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
       DTS:From="Package\Creating tables"
       DTS:LogicalAnd="True"
       DTS:ObjectName="Constraint"
-      DTS:To="Package\Foreach Loop Container2" />
+      DTS:To="Package\Loops through Files and folders" />
   </DTS:PrecedenceConstraints>
   <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
 <!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
@@ -1925,27 +1925,23 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
           Id="Package\Creating tables"
           TopLeft="382.592571688656,94.2740734185039" />
         <NodeLayout
-          Size="137.6,41.6"
-          Id="Package\Foreach Loop Container2\Process files"
-          TopLeft="60.2333122523302,159.20476047988" />
-        <NodeLayout
-          Size="158.4,41.6"
-          Id="Package\Foreach Loop Container2\Populating tables"
-          TopLeft="59.5101650616052,327.493122145171" />
-        <NodeLayout
-          Size="128.8,41.6"
-          Id="Package\Foreach Loop Container2\Get names"
-          TopLeft="70.5888684605018,239.633331404792" />
-        <NodeLayout
           Size="155.2,41.6"
-          Id="Package\Foreach Loop Container2\Expression Task"
+          Id="Package\Loops through Files and folders\Expression Task"
           TopLeft="54.3999792377163,99.1666655758352" />
         <NodeLayout
+          Size="128.8,41.6"
+          Id="Package\Loops through Files and folders\Get names"
+          TopLeft="70.5888684605018,239.633331404792" />
+        <NodeLayout
+          Size="137.6,41.6"
+          Id="Package\Loops through Files and folders\Process files"
+          TopLeft="60.2333122523302,159.20476047988" />
+        <NodeLayout
           Size="130.4,41.6"
-          Id="Package\Foreach Loop Container2\Script Task"
+          Id="Package\Loops through Files and folders\Script Task"
           TopLeft="68.2237889241377,5.5" />
         <EdgeLayout
-          Id="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint]"
+          Id="Package\Loops through Files and folders.PrecedenceConstraints[Constraint]"
           TopLeft="209.599979237716,119.966665575835">
           <EdgeLayout.Curve>
             <mssgle:Curve
@@ -1979,7 +1975,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
           </EdgeLayout.Labels>
         </EdgeLayout>
         <EdgeLayout
-          Id="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint 1]"
+          Id="Package\Loops through Files and folders.PrecedenceConstraints[Constraint 1]"
           TopLeft="132.711884080927,47.1">
           <EdgeLayout.Curve>
             <mssgle:Curve
@@ -2001,7 +1997,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
           </EdgeLayout.Labels>
         </EdgeLayout>
         <EdgeLayout
-          Id="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint 2]"
+          Id="Package\Loops through Files and folders.PrecedenceConstraints[Constraint 2]"
           TopLeft="132.011090356416,200.80476047988">
           <EdgeLayout.Curve>
             <mssgle:Curve
@@ -2022,20 +2018,24 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
             <EdgeLabelCollection />
           </EdgeLayout.Labels>
         </EdgeLayout>
+        <NodeLayout
+          Size="158.4,41.6"
+          Id="Package\Loops through Files and folders\Populating tables"
+          TopLeft="60.3434983494073,348.826457310619" />
         <EdgeLayout
-          Id="Package\Foreach Loop Container2.PrecedenceConstraints[Constraint 3]"
-          TopLeft="136.849516761054,281.233331404792">
+          Id="Package\Loops through Files and folders.PrecedenceConstraints[Constraint 3]"
+          TopLeft="137.266183404955,281.233331404792">
           <EdgeLayout.Curve>
             <mssgle:Curve
               StartConnector="{assembly:Null}"
-              EndConnector="0,46.259790740379"
+              EndConnector="0,67.5931259058265"
               Start="0,0"
-              End="0,38.759790740379">
+              End="0,60.0931259058265">
               <mssgle:Curve.Segments>
                 <mssgle:SegmentCollection
                   Capacity="5">
                   <mssgle:LineSegment
-                    End="0,38.759790740379" />
+                    End="0,60.0931259058265" />
                 </mssgle:SegmentCollection>
               </mssgle:Curve.Segments>
             </mssgle:Curve>
@@ -2047,9 +2047,9 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
         <ContainerLayout
           HeaderHeight="43"
           IsExpanded="True"
-          PanelSize="293.6,424"
-          Size="293.6,467.2"
-          Id="Package\Foreach Loop Container2"
+          PanelSize="293.6,445.6"
+          Size="293.6,488.8"
+          Id="Package\Loops through Files and folders"
           TopLeft="308.671424688257,199.657141235102" />
         <EdgeLayout
           Id="Package.PrecedenceConstraints[Constraint]"
@@ -2077,28 +2077,28 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
     </LayoutInfo>
   </Package>
   <TaskHost
-    design-time-name="Package\Foreach Loop Container2\Process files">
+    design-time-name="Package\Loops through Files and folders\Process files">
     <LayoutInfo>
       <GraphLayout
-        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mssgm="clr-namespace:Microsoft.SqlServer.Graph.Model;assembly=Microsoft.SqlServer.Graph">
         <NodeLayout
           Size="152.8,41.6"
-          Id="Package\Foreach Loop Container2\Process files\Derived Column"
+          Id="Package\Loops through Files and folders\Process files\Derived Column"
           TopLeft="356.66664717926,259.133331531352" />
         <NodeLayout
           Size="140,41.6"
-          Id="Package\Foreach Loop Container2\Process files\Excel Source"
+          Id="Package\Loops through Files and folders\Process files\Excel Source"
           TopLeft="348.999994799495,52.9999992102385" />
         <NodeLayout
           Size="171.2,41.6"
-          Id="Package\Foreach Loop Container2\Process files\OLE DB Destination"
+          Id="Package\Loops through Files and folders\Process files\OLE DB Destination"
           TopLeft="351.119042978282,378.771424627787" />
         <NodeLayout
           Size="156,41.6"
-          Id="Package\Foreach Loop Container2\Process files\Data Conversion"
+          Id="Package\Loops through Files and folders\Process files\Data Conversion"
           TopLeft="354.999994710088,158.999997630715" />
         <EdgeLayout
-          Id="Package\Foreach Loop Container2\Process files.Paths[Excel Source Output]"
+          Id="Package\Loops through Files and folders\Process files.Paths[Excel Source Output]"
           TopLeft="418.999994799495,94.5999992102385">
           <EdgeLayout.Curve>
             <mssgle:Curve
@@ -2128,11 +2128,13 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
             </mssgle:Curve>
           </EdgeLayout.Curve>
           <EdgeLayout.Labels>
-            <EdgeLabelCollection />
+            <mssgm:EdgeLabel
+              BoundingBox="0,0,0,0"
+              RelativePosition="Any" />
           </EdgeLayout.Labels>
         </EdgeLayout>
         <EdgeLayout
-          Id="Package\Foreach Loop Container2\Process files.Paths[Derived Column Output]"
+          Id="Package\Loops through Files and folders\Process files.Paths[Derived Column Output]"
           TopLeft="434.892845078771,300.733331531352">
           <EdgeLayout.Curve>
             <mssgle:Curve
@@ -2150,11 +2152,13 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
             </mssgle:Curve>
           </EdgeLayout.Curve>
           <EdgeLayout.Labels>
-            <EdgeLabelCollection />
+            <mssgm:EdgeLabel
+              BoundingBox="0,0,0,0"
+              RelativePosition="Any" />
           </EdgeLayout.Labels>
         </EdgeLayout>
         <EdgeLayout
-          Id="Package\Foreach Loop Container2\Process files.Paths[Data Conversion Output]"
+          Id="Package\Loops through Files and folders\Process files.Paths[Data Conversion Output]"
           TopLeft="433.033320944674,200.599997630715">
           <EdgeLayout.Curve>
             <mssgle:Curve
@@ -2172,14 +2176,16 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
             </mssgle:Curve>
           </EdgeLayout.Curve>
           <EdgeLayout.Labels>
-            <EdgeLabelCollection />
+            <mssgm:EdgeLabel
+              BoundingBox="0,0,0,0"
+              RelativePosition="Any" />
           </EdgeLayout.Labels>
         </EdgeLayout>
       </GraphLayout>
     </LayoutInfo>
   </TaskHost>
   <PipelineComponentMetadata
-    design-time-name="Package\Foreach Loop Container2\Process files\Excel Source">
+    design-time-name="Package\Loops through Files and folders\Process files\Excel Source">
     <Properties>
       <Property>
         <Name>DataSourceViewID</Name>
@@ -2187,7 +2193,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</BinaryItem>
     </Properties>
   </PipelineComponentMetadata>
   <PipelineComponentMetadata
-    design-time-name="Package\Foreach Loop Container2\Process files\OLE DB Destination">
+    design-time-name="Package\Loops through Files and folders\Process files\OLE DB Destination">
     <Properties>
       <Property>
         <Name>DataSourceViewID</Name>

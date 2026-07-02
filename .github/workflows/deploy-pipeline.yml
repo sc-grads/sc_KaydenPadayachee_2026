@@ -1,0 +1,105 @@
+name: End-to-End SSIS Package and Agent Job Deployment
+ 
+on:
+  push:
+    branches:
+      - main  # Triggers automation whenever code updates are pushed to main
+ 
+jobs:
+  deploy-all:
+    runs-on: self-hosted  # Runs directly on your Windows Database Server via a self-hosted runner
+    steps:
+    - name: Checkout Code Repository
+      uses: actions/checkout@v4
+ 
+    # -------------------------------------------------------------
+    # STEP 1: DEPLOY COMPILED SSIS PACKAGE TO SSISDB
+    # -------------------------------------------------------------
+    - name: Deploy SSIS ISPAC Artifact to SSISDB Catalog
+      run: |
+        Write-Output "Loading Integration Services Deployment Objects..."
+        [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.SqlServer.Management.IntegrationServices") | Out-Null
+        # Server target updated to your named instance
+        $serverName = "DESKTOP-DBA1BPB\SQLSERVER2025"
+        $connectionString = "Data Source=$serverName;Initial Catalog=master;Integrated Security=True;"
+        $connection = New-Object System.Data.SqlClient.SqlConnection($connectionString)
+        # Establish Connection to SSIS Management Namespace
+        $integrationServices = New-Object Microsoft.SqlServer.Management.IntegrationServices.IntegrationServices($connection)
+        # Target locations configuration
+        $catalogName = "SSISDB"
+        $folderName = "TimesheetAutomation"
+        $projectName = "ProjectTime"
+        $ispacPath = "$env:GITHUB_WORKSPACE\Timesheet\ProjectTime\bin\Development\ProjectTime.ispac"
+ 
+        # Check if Catalog exists
+        if ($integrationServices.Catalogs.Count -eq 0 -or !$integrationServices.Catalogs[$catalogName]) {
+            Write-Error "SSISDB Catalog not found! Ensure SSIS feature is enabled on server instance: $serverName"
+            exit 1
+        }
+ 
+        $catalog = $integrationServices.Catalogs[$catalogName]
+ 
+        # Verify or Create deployment target directory folder
+        $folder = $catalog.Folders[$folderName]
+        if (!$folder) {
+            Write-Output "Creating target environment folder: $folderName"
+            $folder = New-Object Microsoft.SqlServer.Management.IntegrationServices.CatalogFolder($catalog, $folderName, "Automated deployment folder")
+            $folder.Create()
+        }
+ 
+        # Deploy compiled project ISPAC binary stream
+        Write-Output "Streaming ISPAC package deployment directly to SSISDB Catalog..."
+        $projectBinary = [System.IO.File]::ReadAllBytes($ispacPath)
+        $folder.DeployProject($projectName, $projectBinary)
+        Write-Output "SSIS Project successfully registered to Catalog."
+      shell: powershell
+ 
+    # -------------------------------------------------------------
+    # STEP 2: CREATE SQL SERVER AGENT JOB (INLINE EXECUTION)
+    # -------------------------------------------------------------
+    - name: Configure and Deploy SQL Server Agent Job Orchestrator
+      run: |
+        Write-Output "Provisioning/Updating SQL Agent Job..."
+        $sqlScript = @"
+        USE [msdb];
+        -- Drop the job if it already exists to ensure a clean overwrite
+        IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'Run_Timesheet_ETL_Job')
+        BEGIN
+            EXEC msdb.dbo.sp_delete_job @job_name = N'Run_Timesheet_ETL_Job', @delete_unused_schedule = 1;
+        END;
+ 
+        DECLARE @ReturnCode INT = 0;
+        DECLARE @JobId BINARY(16);
+ 
+        -- 1. Add the Job
+        EXEC @ReturnCode = msdb.dbo.sp_add_job 
+            @job_name = N'Run_Timesheet_ETL_Job', 
+            @enabled = 1, 
+            @description = N'Automated Agent Job provisioned by GitHub pipeline.', 
+            @category_name = N'[Uncategorized (Local)]', 
+            @owner_login_name = N'sa', 
+            @job_id = @JobId OUTPUT;
+ 
+        -- 2. Add the Job Step pointing to your exact SSIS Catalog path and server instance
+        EXEC msdb.dbo.sp_add_jobstep 
+            @job_id = @JobId, 
+            @step_name = N'Execute SSIS Package Stream', 
+            @step_id = 1, 
+            @cmdexec_success_code = 0, 
+            @on_success_action = 1, 
+            @on_failure_action = 2, 
+            @subsystem = N'SSIS', 
+            @command = N'/ISSERVER "\"\SSISDB\TimesheetAutomation\ProjectTime\Package.dtsx\"" /SERVER "\"DESKTOP-DBA1BPB\SQLSERVER2025\"" /Par "\"$ServerOption::LOGGING_LEVEL(Int16)\"";1 /CALLERINFO SQLAGENT /REPORTING E', 
+            @database_name = N'master', 
+            @flags = 0;
+ 
+        -- 3. Target the local instance setup
+        EXEC msdb.dbo.sp_add_jobserver 
+            @job_id = @JobId, 
+            @server_name = N'(local)';
+        "@
+ 
+        # Target server updated to your named instance here as well
+        Invoke-Sqlcmd -Query $sqlScript -ServerInstance "DESKTOP-DBA1BPB\SQLSERVER2025"
+        Write-Output "SQL Agent Job Successfully Created and Configured!"
+      shell: powershell
