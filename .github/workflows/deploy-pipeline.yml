@@ -9,7 +9,7 @@ on:
  
 jobs:
   build-and-deploy:
-    runs-on: [self-hosted, SAMBE2025001]
+    runs-on: [self-hosted, DESKTOP-DBA1BPB]
  
     steps:
     - name: Checkout Repository
