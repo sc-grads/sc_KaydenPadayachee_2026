@@ -25,7 +25,7 @@ jobs:
       run: |
         $sqlScriptFile = "${{ github.workspace }}\Timesheet\Create_Database_And_Tables.sql"
         sqlcmd -S "DESKTOP-DBA1BPB\SQLSERVER2025" -d "master" -E -b -i "$sqlScriptFile"
-        if ($LASTEXITCODE -ne 0) { Throw "TimesheetDB initialization script failed." }
+        if ($LASTEXITCODE -ne 0) { Throw "TimesheetDB1 initialization script failed." }
     # =========================================================================
     # PHASE 1: CONTINUOUS INTEGRATION (COMPILATION VIA DEVENV)
     # =========================================================================
