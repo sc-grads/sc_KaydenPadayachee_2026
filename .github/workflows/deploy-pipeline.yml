@@ -44,7 +44,7 @@ jobs:
         shell: powershell
         run: |
           $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
-         & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
+          & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
  
           $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
           if (Test-Path $targetIspacPath) {
@@ -167,7 +167,7 @@ jobs:
   # =========================================================================
   Production:
     needs: notify-production-approval
-    environment: partner-sql  # This triggers GitHub's built-in UI manual approval gate
+    environment: partner-sql  
     runs-on: self-hosted
     steps:
       - name: Checkout Repository
@@ -175,6 +175,7 @@ jobs:
  
       # PHASE 4: PARTNER DATABASE GENERATION
       - name: Create Partner Database and Tables
+        shell: powershell
         env:
           PARTNER_SERVER: ${{ secrets.PARTNER_DB_SERVER }}
           PARTNER_PORT: ${{ secrets.PARTNER_DB_PORT }}
@@ -199,6 +200,7 @@ jobs:
  
       # PHASE 5: DATA EXTRACTION & PUSH (BCP)
       - name: Synchronize Data To Partner Database
+        shell: powershell
         env:
           PARTNER_SERVER: ${{ secrets.PARTNER_DB_SERVER }}
           PARTNER_PORT: ${{ secrets.PARTNER_DB_PORT }}
