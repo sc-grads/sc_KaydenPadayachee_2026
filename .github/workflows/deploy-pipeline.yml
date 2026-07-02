@@ -1,4 +1,4 @@
-name: DevTest Then Production
+name: DevTest Then Production SSIS
  
 on:
   push:
@@ -177,10 +177,10 @@ jobs:
       - name: Create Partner Database and Tables
         shell: powershell
         env:
-          PARTNER_SERVER: ${{ secrets.PARTNER_DB_SERVER }}
-          PARTNER_PORT: ${{ secrets.PARTNER_DB_PORT }}
-          PARTNER_USER: ${{ secrets.PARTNER_DB_USER }}
-          PARTNER_PASSWORD: ${{ secrets.PARTNER_DB_PASSWORD }}
+          PARTNER_SERVER: ${{ secrets.SQL_SERVER }}
+          PARTNER_PORT: ${{ secrets.SQL_PORT }}
+          PARTNER_USER: ${{ secrets.SQL_USER }}
+          PARTNER_PASSWORD: ${{ secrets.SQL_PASSWORD }}
         run: |
           $scriptFile = "${{ github.workspace }}\database\Create_Database_And_Tables.sql"
           if (!(Test-Path $scriptFile)) { throw "Create_Database_And_Tables.sql not found." }
@@ -202,10 +202,10 @@ jobs:
       - name: Synchronize Data To Partner Database
         shell: powershell
         env:
-          PARTNER_SERVER: ${{ secrets.PARTNER_DB_SERVER }}
-          PARTNER_PORT: ${{ secrets.PARTNER_DB_PORT }}
-          PARTNER_USER: ${{ secrets.PARTNER_DB_USER }}
-          PARTNER_PASSWORD: ${{ secrets.PARTNER_DB_PASSWORD }}
+          PARTNER_SERVER: ${{ secrets.SQL_SERVER }}
+          PARTNER_PORT: ${{ secrets.SQL_PORT }}
+          PARTNER_USER: ${{ secrets.SQL_USER }}
+          PARTNER_PASSWORD: ${{ secrets.SQL_PASSWORD }}
         run: |
           $exportFolder = "${{ github.workspace }}\PartnerSync"
           if (!(Test-Path $exportFolder)) { New-Item -ItemType Directory -Path $exportFolder | Out-Null }
