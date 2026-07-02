@@ -67,7 +67,7 @@ jobs:
         name: ssis-deployment-package
         path: ${{ env.ISPAC_PATH }}
  
-    # =========================================================================
+    # ==========================================================================
     # PHASE 2: CONTINUOUS DEPLOYMENT (ZERO-PASSWORD INJECTION)
     # =========================================================================
     - name: Deploy to SSISDB Catalog
