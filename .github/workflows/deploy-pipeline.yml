@@ -41,7 +41,7 @@ jobs:
     - name: Build SSIS Project to ISPAC
       shell: powershell
       run: |
-        $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime.dtproj"
+        $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
         # 🚀 Fixed: Placed command onto a fresh line with explicit quotes for parameter evaluation
         & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
  
