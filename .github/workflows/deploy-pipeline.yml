@@ -177,10 +177,10 @@ jobs:
       - name: Create Partner Database and Tables
         shell: powershell
         env:
-          PARTNER_SERVER: ${{ secrets.SQL_SERVER }}
-          PARTNER_PORT: ${{ secrets.SQL_PORT }}
-          PARTNER_USER: ${{ secrets.SQL_USER }}
-          PARTNER_PASSWORD: ${{ secrets.SQL_PASSWORD }}
+          PARTNER_SERVER: ${{ secrets.DB_SERVER }}
+          PARTNER_PORT: ${{ secrets.DB_PORT }}
+          PARTNER_USER: ${{ secrets.DB_USER }}
+          PARTNER_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           $scriptFile = "${{ github.workspace }}\database\Create_Database_And_Tables.sql"
           if (!(Test-Path $scriptFile)) { throw "Create_Database_And_Tables.sql not found." }
@@ -203,9 +203,9 @@ jobs:
         shell: powershell
         env:
           PARTNER_SERVER: ${{ secrets.SQL_SERVER }}
-          PARTNER_PORT: ${{ secrets.SQL_PORT }}
-          PARTNER_USER: ${{ secrets.SQL_USER }}
-          PARTNER_PASSWORD: ${{ secrets.SQL_PASSWORD }}
+          PARTNER_PORT: ${{ secrets.DB_PORT }}
+          PARTNER_USER: ${{ secrets.DB_USER }}
+          PARTNER_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
           $exportFolder = "${{ github.workspace }}\PartnerSync"
           if (!(Test-Path $exportFolder)) { New-Item -ItemType Directory -Path $exportFolder | Out-Null }
