@@ -1,4 +1,5 @@
 name: Parallel SSIS Deployment
+ 
 on:
   push:
     branches:
@@ -10,9 +11,9 @@ on:
  
 jobs:
   # =========================================================================
-  # JOB 1: BUILD THE SSIS PROJECT
+  # JOB 1: DEPLOY TO KAYDEN'S SQL SERVER
   # =========================================================================
-  Build:
+  Deploy-Kayden:
     runs-on: [self-hosted, Kayden]
     steps:
       - name: Checkout Repository
@@ -49,37 +50,11 @@ jobs:
               Throw "Build completed, but the compiled .ispac artifact was not found inside the target bin path."
           }
  
-      - name: Upload Compiled Package Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ssis-deployment-package
-          path: ${{ env.ISPAC_PATH }}
- 
-  # =========================================================================
-  # JOB 2: DEPLOY TO KAYDEN'S SQL SERVER
-  # =========================================================================
-  Deploy-Kayden:
-    needs: Build
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    runs-on: [self-hosted, Kayden]
-    steps:
-      - name: Download Compiled Package Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ssis-deployment-package
-          path: ${{ github.workspace }}\Artifact
- 
-      - name: Locate ISPAC File
-        shell: pwsh
-        run: |
-          $ispac = Get-ChildItem -Path "${{ github.workspace }}\Artifact" -Recurse *.ispac | Select-Object -First 1
-          if (-not $ispac) { Throw "No ISPAC package found in the downloaded artifact." }
-          echo "LOCAL_ISPAC_PATH=$($ispac.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
- 
       - name: Deploy to Kayden SSISDB Catalog
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         shell: pwsh
         run: |
-          $projectPath = "${{ env.LOCAL_ISPAC_PATH }}"
+          $projectPath = "${{ env.ISPAC_PATH }}"
           $folderName = "ETL"
           $projectName = "ProjectTime"
           $fileBytes = [System.IO.File]::ReadAllBytes($projectPath)
@@ -103,6 +78,7 @@ jobs:
           if (Test-Path $sqlScriptPath) { Remove-Item $sqlScriptPath -Force }
  
       - name: Configure Kayden's SQL Agent Automated Job
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         shell: pwsh
         run: |
           $jobScriptPath = "${{ github.workspace }}\agent_job_kayden_temp.sql"
@@ -151,30 +127,51 @@ jobs:
           if (Test-Path $jobScriptPath) { Remove-Item $jobScriptPath -Force }
  
   # =========================================================================
-  # JOB 3: DEPLOY TO JABULANE'S SQL SERVER
+  # JOB 2: DEPLOY TO JABULANE'S SQL SERVER
   # =========================================================================
   Deploy-Jabulane:
-    needs: Build
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: Deploy-Kayden
     runs-on: [self-hosted, Jabulane]
     steps:
-      - name: Download Compiled Package Artifact
-        uses: actions/download-artifact@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
-          name: ssis-deployment-package
-          path: ${{ github.workspace }}\Artifact
+          submodules: false  
  
-      - name: Locate ISPAC File
+      - name: Locate Visual Studio DevEnv Tool
         shell: pwsh
         run: |
-          $ispac = Get-ChildItem -Path "${{ github.workspace }}\Artifact" -Recurse *.ispac | Select-Object -First 1
-          if (-not $ispac) { Throw "No ISPAC package found in the downloaded artifact." }
-          echo "LOCAL_ISPAC_PATH=$($ispac.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
+          if (-not $vsPath) {
+              $vsPath = & "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
+          }
+          $devenvDir = Split-Path $vsPath
+          $devenvCom = Join-Path $devenvDir "devenv.com"
+          if (Test-Path $devenvCom) {
+              Write-Host "Found Visual Studio compiler at: $devenvCom"
+              echo "DEVENV_PATH=$devenvCom" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              Throw "CRITICAL ERROR: Visual Studio (devenv.com) was not found on this self-hosted runner."
+          }
+ 
+      - name: Build SSIS Project to ISPAC
+        shell: pwsh
+        run: |
+          $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
+          & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
+          $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
+          if (Test-Path $targetIspacPath) {
+              Write-Host "Success: .ispac deployment bundle created cleanly."
+              echo "ISPAC_PATH=$targetIspacPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              Throw "Build completed, but the compiled .ispac artifact was not found inside the target bin path."
+          }
  
       - name: Deploy to Jabulane SSISDB Catalog
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         shell: pwsh
         run: |
-          $projectPath = "${{ env.LOCAL_ISPAC_PATH }}"
+          $projectPath = "${{ env.ISPAC_PATH }}"
           $folderName = "ETL"
           $projectName = "ProjectTime"
           $fileBytes = [System.IO.File]::ReadAllBytes($projectPath)
@@ -198,6 +195,7 @@ jobs:
           if (Test-Path $sqlScriptPath) { Remove-Item $sqlScriptPath -Force }
  
       - name: Configure Jabulane's SQL Agent Automated Job
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         shell: pwsh
         run: |
           $jobScriptPath = "${{ github.workspace }}\agent_job_jabulane_temp.sql"
@@ -244,36 +242,3 @@ jobs:
           sqlcmd -S "LAPTOP-7LSAQSR0" -d "master" -E -b -i "$jobScriptPath"
           if ($LASTEXITCODE -ne 0) { Throw "Failed to schedule the SQL Server Agent Job on Jabulane's Machine." }
           if (Test-Path $jobScriptPath) { Remove-Item $jobScriptPath -Force }
- 
-  # =========================================================================
-  # GLOBAL STATUS NOTIFICATIONS
-  # =========================================================================
-  notify-success:
-    needs: [Deploy-Kayden, Deploy-Jabulane]
-    if: always() && needs.Deploy-Kayden.result == 'success' && needs.Deploy-Jabulane.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Success Notification
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "title": "SQL DEPLOYMENT SUCCESS (BOTH SERVERS)",
-            "text": "**SSIS package and SQL Agent jobs successfully updated on Kayden and Jabulane servers.**\nRun: ${{ github.run_id }}",
-            "themeColor": "00FF00"
-          }' \
-          ${{ secrets.TEAMS_WEBHOOK }}
- 
-  notify-failure:
-    needs: [Build, Deploy-Kayden, Deploy-Jabulane]
-    if: always() && (needs.Build.result == 'failure' || needs.Deploy-Kayden.result == 'failure' || needs.Deploy-Jabulane.result == 'failure')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send Failure Notification
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d '{
-            "title": "SQL DEPLOYMENT FAILED",
-            "text": "**One or more components in the build/deployment sequence failed.**\n\nView logs:\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-            "themeColor": "FF0000"
-          }' \
-          ${{ secrets.TEAMS_WEBHOOK }}
