@@ -22,7 +22,7 @@ jobs:
           submodules: false  
  
       - name: Locate Visual Studio DevEnv Tool
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
           if (-not $vsPath) {
@@ -38,7 +38,7 @@ jobs:
           }
  
       - name: Build SSIS Project to ISPAC
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
           & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
@@ -52,7 +52,7 @@ jobs:
  
       - name: Deploy to Kayden SSISDB Catalog
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $projectPath = "${{ env.ISPAC_PATH }}"
           $folderName = "ETL"
@@ -79,7 +79,7 @@ jobs:
  
       - name: Configure Kayden's SQL Agent Automated Job
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $jobScriptPath = "${{ github.workspace }}\agent_job_kayden_temp.sql"
           $jobQuery = @"
@@ -139,7 +139,7 @@ jobs:
           submodules: false  
  
       - name: Locate Visual Studio DevEnv Tool
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
           if (-not $vsPath) {
@@ -155,7 +155,7 @@ jobs:
           }
  
       - name: Build SSIS Project to ISPAC
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
           & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
@@ -169,7 +169,7 @@ jobs:
  
       - name: Deploy to Jabulane SSISDB Catalog
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $projectPath = "${{ env.ISPAC_PATH }}"
           $folderName = "ETL"
@@ -196,7 +196,7 @@ jobs:
  
       - name: Configure Jabulane's SQL Agent Automated Job
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        shell: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+        shell: powershell
         run: |
           $jobScriptPath = "${{ github.workspace }}\agent_job_jabulane_temp.sql"
           $jobQuery = @"
