@@ -115,7 +115,7 @@ jobs:
               @freq_recurrence_factor = 1,
               @active_start_time = 080000,
               @active_end_time = 170000;  
-          EXEC dbo.sp_add_jobschedule @job_name = N'Run_Timesheet_ETL_Job', @server_name = N'DESKTOP-DBA1BPB\SQLSERVER2025';
+          EXEC dbo.sp_add_jobserver @job_name = N'Run_Timesheet_ETL_Job', @server_name = N'DESKTOP-DBA1BPB\SQLSERVER2025';
           EXEC msdb.dbo.sp_update_job
               @job_name = N'Run_Timesheet_ETL_Job',
               @notify_level_email = 2,
