@@ -65,6 +65,7 @@ jobs:
     steps:
       - name: Download Compiled Package Artifact
         uses: actions/download-artifact@v4
+        shell: powershell
         with:
           name: ssis-deployment-package
           path: ${{ github.workspace }}\Artifact
@@ -160,6 +161,7 @@ jobs:
     steps:
       - name: Download Compiled Package Artifact
         uses: actions/download-artifact@v4
+        shell: powershell
         with:
           name: ssis-deployment-package
           path: ${{ github.workspace }}\Artifact
