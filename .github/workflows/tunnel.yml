@@ -78,7 +78,8 @@ jobs:
           $sqlQuery | Out-File -FilePath $sqlScriptPath -Encoding ascii -Force
           
           $targetServer = "${{ secrets.DB_SERVER }},${{ secrets.DB_PORT }}"
-          sqlcmd -S "$targetServer" -U "${{ secrets.DB_USER }}" -P "${{ secrets.DB_PASSWORD }}" -d "master" -b -i "$sqlScriptPath"
+          # Included explicit -C flag to bypass the secure handshake drop over the tunnel interface
+          sqlcmd -S "$targetServer" -U "${{ secrets.DB_USER }}" -P "${{ secrets.DB_PASSWORD }}" -d "master" -b -C -i "$sqlScriptPath"
           
           if ($LASTEXITCODE -ne 0) { Throw "SQL deployment script failed over Pinggy tunnel." }
           if (Test-Path $sqlScriptPath) { Remove-Item $sqlScriptPath -Force }
@@ -99,7 +100,7 @@ jobs:
               @enabled = 1,
               @description = N'Runs the automated timesheet SSIS project workflow completely hands-free.',
               @category_name = N'[Uncategorized (Local)]',
-              @owner_login_name = N'automation_user'; -- Dynamically aligns with your new admin user context
+              @owner_login_name = N'automation_user'; 
           EXEC msdb.dbo.sp_add_jobstep
               @job_name = N'Run_Timesheet_ETL_Job',
               @step_name = N'Execute_SSIS_Timesheet_Package',
@@ -130,7 +131,8 @@ jobs:
           $jobQuery | Out-File -FilePath $jobScriptPath -Encoding ascii -Force
           
           $targetServer = "${{ secrets.DB_SERVER }},${{ secrets.DB_PORT }}"
-          sqlcmd -S "$targetServer" -U "${{ secrets.DB_USER }}" -P "${{ secrets.DB_PASSWORD }}" -d "master" -b -i "$jobScriptPath"
+          # Included explicit -C flag here as well
+          sqlcmd -S "$targetServer" -U "${{ secrets.DB_USER }}" -P "${{ secrets.DB_PASSWORD }}" -d "master" -b -C -i "$jobScriptPath"
           
           if ($LASTEXITCODE -ne 0) { Throw "Failed to schedule the SQL Server Agent Job over Pinggy tunnel." }
           if (Test-Path $jobScriptPath) { Remove-Item $jobScriptPath -Force }
