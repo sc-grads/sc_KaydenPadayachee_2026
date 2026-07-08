@@ -83,12 +83,12 @@ jobs:
               @owner_login_name = N'sa';
           GO
 
-          -- Target local PowerShell sub-engine running under the server context to mount assemblies safely
+          -- Target local PowerShell sub-engine running under the server context with escaped SQL quotes
           EXEC msdb.dbo.sp_add_jobstep 
               @job_name = N'Temp_SSIS_Deploy_Job', 
               @step_name = N'Deploy ISPAC Via Assembly', 
               @subsystem = N'PowerShell', 
-              @command = N'[System.Reflection.Assembly]::LoadWithPartialName(\"Microsoft.SqlServer.Management.IntegrationServices\"); `$is = New-Object Microsoft.SqlServer.Management.IntegrationServices.IntegrationServices(New-Object System.Data.SqlClient.SqlConnection(\"Data Source=localhost\SQLSERVER2025;Initial Catalog=master;Integrated Security=SSPI;\")); `$catalog = `$is.Catalogs[\"SSISDB\"]; `$folder = `$catalog.Folders[\"$folderName\"] ?? (New-Object Microsoft.SqlServer.Management.IntegrationServices.CatalogFolder(`$catalog, \"$folderName\", \"$folderName Folder\")); if (!`$folder.State) { `$folder.Create() }; `$projectBinary = $hexString; `$folder.DeployProject(\"$projectName\", `$projectBinary);',
+              @command = N'Add-Type -AssemblyName ''Microsoft.SqlServer.Management.IntegrationServices''; `$conn = New-Object System.Data.SqlClient.SqlConnection(''Data Source=localhost\SQLSERVER2025;Initial Catalog=master;Integrated Security=SSPI;''); `$ssis = New-Object Microsoft.SqlServer.Management.IntegrationServices.IntegrationServices(`$conn); `$catalog = `$ssis.Catalogs[''SSISDB'']; `$folder = `$catalog.Folders[''$folderName'']; if (`$null -eq `$folder) { `$folder = New-Object Microsoft.SqlServer.Management.IntegrationServices.CatalogFolder(`$catalog, ''$folderName'', ''$folderName Folder''); `$folder.Create() }; [byte[]]`$bin = $hexString; `$folder.DeployProjectFilter = `$false; `$folder.DeployProject(''$projectName'', `$bin);',
               @retry_attempts = 0, 
               @retry_interval = 0;
           GO
@@ -103,7 +103,7 @@ jobs:
           GO
 
           -- Thread monitoring loop: Wait for execution logs to wrap up safely
-          DECLARE @status INT = 4;
+          WAITFOR DELAY '00:00:05';
           WHILE (EXISTS (SELECT 1 FROM msdb.dbo.sysjobactivity WHERE job_id = (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'Temp_SSIS_Deploy_Job') AND stop_execution_date IS NULL))
           BEGIN
               WAITFOR DELAY '00:00:02';
