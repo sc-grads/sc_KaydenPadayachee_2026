@@ -1,0 +1,136 @@
+name: Parallel SSIS Deployment via Pinggy Tunnel
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  # =========================================================================
+  # JOB 1: DEPLOY VIA PINGGY TUNNEL (WINDOWS-HOSTED RUNNER)
+  # =========================================================================
+  Deploy-Via-Tunnel:
+    runs-on: windows-latest
+    environment: local-sql 
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false  
+
+      - name: Locate Visual Studio DevEnv Tool
+        shell: powershell
+        run: |
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
+          if (-not $vsPath) {
+              $vsPath = & "${env:ProgramFiles}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property productPath
+          }
+          $devenvDir = Split-Path $vsPath
+          $devenvCom = Join-Path $devenvDir "devenv.com"
+          if (Test-Path $devenvCom) {
+              Write-Host "Found Visual Studio compiler at: $devenvCom"
+              echo "DEVENV_PATH=$devenvCom" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              Throw "CRITICAL ERROR: Visual Studio (devenv.com) was not found on this runner."
+          }
+
+      - name: Build SSIS Project to ISPAC
+        shell: powershell
+        run: |
+          $dtprojPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\ProjectTime.dtproj"
+          & "${{ env.DEVENV_PATH }}" "$dtprojPath" /Build "Development"
+          $targetIspacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
+          if (Test-Path $targetIspacPath) {
+              Write-Host "Success: .ispac deployment bundle created cleanly."
+              echo "ISPAC_PATH=$targetIspacPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+          } else {
+              Throw "Build completed, but the compiled .ispac artifact was not found inside the target bin path."
+          }
+
+      - name: Deploy to Kayden SSISDB Catalog (Via Tunnel)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        shell: powershell
+        run: |
+          $projectPath = "${{ env.ISPAC_PATH }}"
+          $folderName = "ETL"
+          $projectName = "ProjectTime"
+          $fileBytes = [System.IO.File]::ReadAllBytes($projectPath)
+          $hexString = "0x" + [System.BitConverter]::ToString($fileBytes).Replace("-", "")
+          $sqlScriptPath = "${{ github.workspace }}\deploy_kayden_temp.sql"
+          
+          $sqlQuery = @"
+          SET NOCOUNT ON;
+          IF NOT EXISTS (SELECT 1 FROM [SSISDB].[catalog].[folders] WHERE name = '$folderName')
+          BEGIN
+              EXEC [SSISDB].[catalog].[create_folder] @folder_name = '$folderName';
+          END
+          DECLARE @project_binary VARBINARY(MAX) = $hexString;
+          EXEC [SSISDB].[catalog].[deploy_project]
+              @folder_name = '$folderName',
+              @project_name = '$projectName',
+              @project_stream = @project_binary;
+          "@
+          $sqlQuery | Out-File -FilePath $sqlScriptPath -Encoding ascii -Force
+          
+          $targetServer = "${{ secrets.DB_SERVER }},${{ secrets.DB_PORT }}"
+          sqlcmd -S "$targetServer" -U "${{ secrets.DB_USER }}" -P "${{ secrets.DB_PASSWORD }}" -d "master" -b -i "$sqlScriptPath"
+          
+          if ($LASTEXITCODE -ne 0) { Throw "SQL deployment script failed over Pinggy tunnel." }
+          if (Test-Path $sqlScriptPath) { Remove-Item $sqlScriptPath -Force }
+
+      - name: Configure SQL Agent Automated Job (Via Tunnel)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        shell: powershell
+        run: |
+          $jobScriptPath = "${{ github.workspace }}\agent_job_kayden_temp.sql"
+          $jobQuery = @"
+          USE msdb;
+          IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'Run_Timesheet_ETL_Job')
+          BEGIN
+              EXEC dbo.sp_delete_job @job_name = N'Run_Timesheet_ETL_Job', @delete_unused_schedule = 1;
+          END;
+          EXEC dbo.sp_add_job
+              @job_name = N'Run_Timesheet_ETL_Job',
+              @enabled = 1,
+              @description = N'Runs the automated timesheet SSIS project workflow completely hands-free.',
+              @category_name = N'[Uncategorized (Local)]',
+              @owner_login_name = N'automation_user'; -- Dynamically aligns with your new admin user context
+          EXEC msdb.dbo.sp_add_jobstep
+              @job_name = N'Run_Timesheet_ETL_Job',
+              @step_name = N'Execute_SSIS_Timesheet_Package',
+              @step_id = 1,
+              @cmdexec_success_code = 0,
+              @on_success_action = 1,
+              @on_fail_action = 2,    
+              @subsystem = N'SSIS',  
+              @command = N'/ISSERVER "\"\SSISDB\ETL\ProjectTime\Package.dtsx\"" /SERVER "\"DESKTOP-DBA1BPB\SQLSERVER2025\""',
+              @database_name = N'master';
+          EXEC dbo.sp_add_jobschedule
+              @job_name = N'Run_Timesheet_ETL_Job',
+              @name = N'Timesheet_One_Minute_Interval_Schedule',
+              @enabled = 1,
+              @freq_type = 8,              
+              @freq_interval = 62,        
+              @freq_subday_type = 4,      
+              @freq_subday_interval = 1,  
+              @freq_recurrence_factor = 1,
+              @active_start_time = 080000,
+              @active_end_time = 170000;  
+          EXEC dbo.sp_add_jobserver @job_name = N'Run_Timesheet_ETL_Job', @server_name = N'(local)';
+          EXEC msdb.dbo.sp_update_job
+              @job_name = N'Run_Timesheet_ETL_Job',
+              @notify_level_email = 2,
+              @notify_email_operator_name = N'ETL_Admin';
+          "@
+          $jobQuery | Out-File -FilePath $jobScriptPath -Encoding ascii -Force
+          
+          $targetServer = "${{ secrets.DB_SERVER }},${{ secrets.DB_PORT }}"
+          sqlcmd -S "$targetServer" -U "${{ secrets.DB_USER }}" -P "${{ secrets.DB_PASSWORD }}" -d "master" -b -i "$jobScriptPath"
+          
+          if ($LASTEXITCODE -ne 0) { Throw "Failed to schedule the SQL Server Agent Job over Pinggy tunnel." }
+          if (Test-Path $jobScriptPath) { Remove-Item $jobScriptPath -Force }
