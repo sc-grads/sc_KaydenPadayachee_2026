@@ -1,4 +1,4 @@
-name: Deploy SSIS via Pinggy Tunnel
+name: Sequential SSIS Deployment (Local then Partner)
 
 on:
   push:
@@ -6,23 +6,26 @@ on:
       - main
 
 jobs:
+
   # =========================================================================
-  # JOB 1: DEPLOY TO LOCAL ENVIRONMENT (local-sql)
+  # JOB 1: LOCAL DEPLOYMENT
   # =========================================================================
   deploy-local:
-    name: Tunnel Deployment to Local Laptop
+    name: 1. Deploy to Local Laptop
     runs-on: windows-latest
     environment: local-sql
 
     steps:
     - name: Checkout Repository Code
       uses: actions/checkout@v4
- 
-    - name: Deploy SSIS and Create Execution Job
+
+    - name: Deploy SSIS and Create Execution Job (Local)
       shell: powershell
       run: |
+        # STEP 1: LOCATE THE SSIS DEPLOYMENT FILE
         $ispacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
         if (-not (Test-Path -Path $ispacPath)) {
+            Write-Host "Primary path not found. Testing workspace folder structural correction path..."
             $ispacPath = "${{ github.workspace }}\..\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
             $ispacPath = [System.IO.Path]::GetFullPath($ispacPath)
         }
@@ -30,7 +33,8 @@ jobs:
             Write-Error "CRITICAL ERROR: Could not locate ProjectTime.ispac file."
             exit 1
         }
-        
+
+        # STEP 2: DEFINE TARGET CONFIGURATIONS AND ENVIRONMENT VARIABLES (LOCAL)
         $tunnelAddress = "${{ secrets.DB_SERVER }},${{ secrets.DB_PORT }}"
         $dbUser        = "${{ secrets.DB_USER }}"
         $dbPassword    = "${{ secrets.DB_PASSWORD }}"
@@ -39,11 +43,13 @@ jobs:
         $targetFolder  = "ETL"
         $projectName   = "ProjectTime"
         $executionJobName = "Run_Timesheet_ETL_Job"
-        
+
+        # STEP 3: CONVERT ISPAC FILE INTO BINARY DATA STREAM
         $fileBytes = [System.IO.File]::ReadAllBytes($ispacPath)
         $hexString = "0x" + [System.BitConverter]::ToString($fileBytes).Replace("-", "")
-       
-        Write-Host "Establishing local tunnel connection via automation_user..."
+
+        # STEP 4: INITIALIZE SQL SERVER DATABASE CONNECTION OVER NETWORK TUNNEL
+        Write-Host "Establishing tunnel connection via automation_user to Local..."
         $connStr = "Data Source=$tunnelAddress;Initial Catalog=$initialDb;User ID=$dbUser;Password=$dbPassword;TrustServerCertificate=True;Encrypt=False;"
         $connection = New-Object System.Data.SqlClient.SqlConnection($connStr)
         try {
@@ -88,31 +94,35 @@ jobs:
             $command = $connection.CreateCommand()
             $command.CommandText = $sqlQuery
             $command.ExecuteNonQuery() | Out-Null
-            Write-Host "SUCCESS: Local SSIS Project deployed successfully!"
+            Write-Host "SUCCESS: Local deployment completed."
         } catch {
-            Write-Error "Local Deployment Failed: $_"
+            Write-Error "Local Execution Failed: $_"
             exit 1
         } finally {
             $connection.Close()
         }
 
+
   # =========================================================================
-  # JOB 2: DEPLOY TO PARTNER ENVIRONMENT (partner-sql)
+  # JOB 2: PARTNER SERVER DEPLOYMENT
   # =========================================================================
   deploy-partner:
-    name: Tunnel Deployment to Partner Laptop
+    name: 2. Deploy to Partner Server
     runs-on: windows-latest
-    environment: partner-sql  # Ties to your partner protection policies
+    needs: deploy-local
+    environment: partner-sql  # Ties to your partner deployment protection rules
 
     steps:
     - name: Checkout Repository Code
       uses: actions/checkout@v4
- 
+
     - name: Deploy SSIS and Create Execution Job (Partner)
       shell: powershell
       run: |
+        # STEP 1: LOCATE THE SSIS DEPLOYMENT FILE
         $ispacPath = "${{ github.workspace }}\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
         if (-not (Test-Path -Path $ispacPath)) {
+            Write-Host "Primary path not found. Testing workspace folder structural correction path..."
             $ispacPath = "${{ github.workspace }}\..\Timesheet\ProjectTime\ProjectTime\bin\Development\ProjectTime.ispac"
             $ispacPath = [System.IO.Path]::GetFullPath($ispacPath)
         }
@@ -120,8 +130,8 @@ jobs:
             Write-Error "CRITICAL ERROR: Could not locate ProjectTime.ispac file."
             exit 1
         }
-        
-        # Uses secrets configured explicitly inside the partner-sql environment boundaries
+
+        # STEP 2: DEFINE TARGET CONFIGURATIONS AND ENVIRONMENT VARIABLES (PARTNER-BOUNDED)
         $tunnelAddress = "${{ secrets.DB_SERVER }},${{ secrets.DB_PORT }}"
         $dbUser        = "${{ secrets.DB_USER }}"
         $dbPassword    = "${{ secrets.DB_PASSWORD }}"
@@ -131,10 +141,15 @@ jobs:
         $projectName   = "ProjectTime"
         $executionJobName = "Run_Timesheet_ETL_Job"
         
+        # Pointing to your partner's explicit server instance where SSISDB lives
+        $partnerServerName = "LAPTOP-7LSAQSR0"
+
+        # STEP 3: CONVERT ISPAC FILE INTO BINARY DATA STREAM
         $fileBytes = [System.IO.File]::ReadAllBytes($ispacPath)
         $hexString = "0x" + [System.BitConverter]::ToString($fileBytes).Replace("-", "")
-       
-        Write-Host "Establishing partner tunnel connection via automation_user..."
+
+        # STEP 4: INITIALIZE SQL SERVER DATABASE CONNECTION OVER NETWORK TUNNEL
+        Write-Host "Establishing tunnel connection to partner environment..."
         $connStr = "Data Source=$tunnelAddress;Initial Catalog=$initialDb;User ID=$dbUser;Password=$dbPassword;TrustServerCertificate=True;Encrypt=False;"
         $connection = New-Object System.Data.SqlClient.SqlConnection($connStr)
         try {
@@ -160,7 +175,7 @@ jobs:
                 "END",
                 "EXEC dbo.sp_add_job @job_name = N'$executionJobName', @enabled = 1, @description = N'Runs the automated timesheet SSIS project workflow completely hands-free.', @start_step_id = 1, @owner_login_name = N'automation_user';",
                 "DECLARE @run_command NVARCHAR(MAX);",
-                "SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\Package.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + N'LAPTOP-7LSAQSR0' + CHAR(34) + N' /Par ' + CHAR(34) + N'`$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';",
+                "SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\Package.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + N'$partnerServerName' + CHAR(34) + N' /Par ' + CHAR(34) + N'`$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';",
                 "EXEC dbo.sp_add_jobstep @job_name = N'$executionJobName', @step_name = N'Execute_SSIS_Timesheet_Package', @subsystem = N'SSIS', @command = @run_command, @retry_attempts = 0;",
                 "EXEC dbo.sp_add_jobserver @job_name = N'$executionJobName', @server_name = N'(local)';",
                 "EXEC dbo.sp_add_jobschedule ",
@@ -179,9 +194,9 @@ jobs:
             $command = $connection.CreateCommand()
             $command.CommandText = $sqlQuery
             $command.ExecuteNonQuery() | Out-Null
-            Write-Host "SUCCESS: Partner SSIS Project deployed successfully!"
+            Write-Host "SUCCESS: Partner deployment completed."
         } catch {
-            Write-Error "Partner Deployment Failed: $_"
+            Write-Error "Partner Execution Failed: $_"
             exit 1
         } finally {
             $connection.Close()
