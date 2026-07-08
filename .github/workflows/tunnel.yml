@@ -160,7 +160,7 @@ jobs:
                 "END",
                 "EXEC dbo.sp_add_job @job_name = N'$executionJobName', @enabled = 1, @description = N'Runs the automated timesheet SSIS project workflow completely hands-free.', @start_step_id = 1, @owner_login_name = N'automation_user';",
                 "DECLARE @run_command NVARCHAR(MAX);",
-                "SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\Package.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + N'DESKTOP-DBA1BPB\SQLSERVER2025' + CHAR(34) + N' /Par ' + CHAR(34) + N'`$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';",
+                "SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\Package.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + N'LAPTOP-7LSAQSR0' + CHAR(34) + N' /Par ' + CHAR(34) + N'`$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';",
                 "EXEC dbo.sp_add_jobstep @job_name = N'$executionJobName', @step_name = N'Execute_SSIS_Timesheet_Package', @subsystem = N'SSIS', @command = @run_command, @retry_attempts = 0;",
                 "EXEC dbo.sp_add_jobserver @job_name = N'$executionJobName', @server_name = N'(local)';",
                 "EXEC dbo.sp_add_jobschedule ",
