@@ -187,8 +187,9 @@ jobs:
           EXEC [SSISDB].[catalog].[deploy_project]
               @folder_name = '$folderName',
               @project_name = '$projectName',
-              @project_stream = @project_binary;
-          "@
+              @project_stream = @project_binary;"
+              
+          
           $sqlQuery | Out-File -FilePath $sqlScriptPath -Encoding ascii -Force
           sqlcmd -S "LAPTOP-7LSAQSR0" -d "master" -E -b -i "$sqlScriptPath"
           if ($LASTEXITCODE -ne 0) { Throw "SQL deployment script failed on Jabulane's machine." }
