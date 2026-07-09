@@ -2,8 +2,7 @@ name: Deploy SSIS via Pinggy Tunnel
  
 on:
   push:
-    branches:
-      - main
+   
  
 jobs:
  
@@ -97,7 +96,7 @@ jobs:
  
             EXEC dbo.sp_start_job @job_name = N'$executionJobName';
             WAITFOR DELAY '00:00:05';
-            '@
+        '@
             # Safe string replacements handled strictly at execution runtime
             $sqlQuery = $sqlQuery.Replace('$targetFolder', $targetFolder)
             $sqlQuery = $sqlQuery.Replace('$projectName', $projectName)
@@ -219,7 +218,7 @@ jobs:
  
             EXEC dbo.sp_start_job @job_name = N'$executionJobName';
             WAITFOR DELAY '00:00:05';
-            '@
+        '@
  
             # Safe string replacements handled strictly at execution runtime
             $sqlQuery = $sqlQuery.Replace('$targetFolder', $targetFolder)
