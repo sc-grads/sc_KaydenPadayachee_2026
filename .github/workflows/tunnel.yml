@@ -156,6 +156,8 @@ jobs:
         $targetFolder     = "ETL"
         $projectName      = "ProjectTime"
         $executionJobName = "Run_Timesheet_ETL_Job"
+        # Partner specific configuration overrides
+        $partnerServer    = "LAPTOP-7LSAQSR0"
  
         # STEP 3: CONVERT ISPAC FILE INTO BINARY DATA STREAM
         $fileBytes = [System.IO.File]::ReadAllBytes($ispacPath)
@@ -183,7 +185,19 @@ jobs:
             EXEC dbo.sp_add_job @job_name = N'GitHub_SSIS_Deploy_Job', @enabled = 1, @start_step_id = 1;
  
             DECLARE @deploy_script NVARCHAR(MAX);
-            SET @deploy_script = N'USE [SSISDB]; IF NOT EXISTS (SELECT 1 FROM [catalog].[folders] WHERE name = ''$targetFolder'') BEGIN EXEC [catalog].[create_folder] @folder_name = N''$targetFolder''; END DECLARE @project_stream VARBINARY(MAX) = $hexString; EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;';
+            SET @deploy_script = N'USE [SSISDB]; 
+            IF NOT EXISTS (SELECT 1 FROM [catalog].[folders] WHERE name = ''$targetFolder'') 
+            BEGIN 
+                EXEC [catalog].[create_folder] @folder_name = N''$targetFolder''; 
+            END 
+            DECLARE @project_stream VARBINARY(MAX) = $hexString; 
+            EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;
+ 
+            -- Injected environment parameter fixes to overwrite hardcoded design-time variables
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 20, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.ServerName'', @parameter_value = N''$partnerServer'';
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 20, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.ServerName'', @parameter_value = N''$partnerServer'';
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 20, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.InitialCatalog'', @parameter_value = N''master'';
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 20, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.InitialCatalog'', @parameter_value = N''TimesheetDB1'';';
  
             EXEC dbo.sp_add_jobstep @job_name = N'GitHub_SSIS_Deploy_Job', @step_name = N'Run Deploy', @subsystem = N'TSQL', @command = @deploy_script, @retry_attempts = 0;
             EXEC dbo.sp_add_jobserver @job_name = N'GitHub_SSIS_Deploy_Job', @server_name = N'(local)';
@@ -224,13 +238,14 @@ jobs:
             $sqlQuery = $sqlQuery.Replace('$targetFolder', $targetFolder)
             $sqlQuery = $sqlQuery.Replace('$projectName', $projectName)
             $sqlQuery = $sqlQuery.Replace('$executionJobName', $executionJobName)
+            $sqlQuery = $sqlQuery.Replace('$partnerServer', $partnerServer)
             $sqlQuery = $sqlQuery.Replace('$hexString', $hexString)
  
             $command = $connection.CreateCommand()
             $command.CommandText = $sqlQuery
             $command.ExecuteNonQuery() | Out-Null
  
-            Write-Host "SUCCESS: Partner deployment completed, job triggered, and execution delay finalized!"
+            Write-Host "SUCCESS: Partner deployment completed, configuration overrides applied, and task triggered!"
  
         } catch {
             Write-Error "Partner Execution Failed: $_"
