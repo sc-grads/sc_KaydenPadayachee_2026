@@ -67,7 +67,7 @@ jobs:
             EXEC dbo.sp_add_job @job_name = N'GitHub_SSIS_Deploy_Job', @enabled = 1, @start_step_id = 1;
             DECLARE @deploy_script NVARCHAR(MAX);
             SET @deploy_script = N'USE [SSISDB]; IF NOT EXISTS (SELECT 1 FROM [catalog].[folders] WHERE name = ''$targetFolder'') BEGIN EXEC [catalog].[create_folder] @folder_name = N''$targetFolder''; END DECLARE @project_stream VARBINARY(MAX) = $hexString; EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;';
-            EXEC dbo.sp_add_jobstep @job_name = N'GitHub_SSIS_Deploy_Job', @step_name = N'Run Deploy', @subsystem = N'TSQL', @command = @deploy_script, @retry_attempts = 0;
+            -- FIX: Cleaned up duplicate jobstep statement that caused the validation failure
             EXEC dbo.sp_add_jobstep @job_name = N'GitHub_SSIS_Deploy_Job', @step_name = N'Run Deploy', @subsystem = N'TSQL', @command = @deploy_script, @retry_attempts = 0;
             EXEC dbo.sp_add_jobserver @job_name = N'GitHub_SSIS_Deploy_Job', @server_name = N'(local)';
             DECLARE @deploy_job_id UNIQUEIDENTIFIER;
