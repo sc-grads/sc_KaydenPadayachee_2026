@@ -2,15 +2,15 @@ name: Deploy SSIS via Pinggy Tunnel
  
 on:
   push:
-    branches:
-      - main
+    
  
 jobs:
  
-  # JOB 1: DEVTEST DEPLOYMENT (LOCAL)
-
+  # =========================================================================
+  # JOB 1: DEPLOY TO LOCAL LAPTOP
+  # =========================================================================
   deploy-local:
-    name: DevTest/Deploy
+    name: DevTest\Deploy
     runs-on: windows-latest
     environment: local-sql
  
@@ -42,7 +42,7 @@ jobs:
         $initialDb     = "master"
         $targetFolder     = "ETL"
         $projectName      = "ProjectTime"
-        $executionJobName = "RunTimesheetDevTestMigrationPK"
+        $executionJobName = "Run_Timesheet_ETL_Job"
         # STEP 3: CONVERT ISPAC FILE INTO BINARY DATA STREAM
         $fileBytes = [System.IO.File]::ReadAllBytes($ispacPath)
         $hexString = "0x" + [System.BitConverter]::ToString($fileBytes).Replace("-", "")
@@ -67,6 +67,7 @@ jobs:
             EXEC dbo.sp_add_job @job_name = N'GitHub_SSIS_Deploy_Job', @enabled = 1, @start_step_id = 1;
             DECLARE @deploy_script NVARCHAR(MAX);
             SET @deploy_script = N'USE [SSISDB]; IF NOT EXISTS (SELECT 1 FROM [catalog].[folders] WHERE name = ''$targetFolder'') BEGIN EXEC [catalog].[create_folder] @folder_name = N''$targetFolder''; END DECLARE @project_stream VARBINARY(MAX) = $hexString; EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;';
+            -- FIX: Cleaned up duplicate jobstep statement that caused the validation failure
             EXEC dbo.sp_add_jobstep @job_name = N'GitHub_SSIS_Deploy_Job', @step_name = N'Run Deploy', @subsystem = N'TSQL', @command = @deploy_script, @retry_attempts = 0;
             EXEC dbo.sp_add_jobserver @job_name = N'GitHub_SSIS_Deploy_Job', @server_name = N'(local)';
             DECLARE @deploy_job_id UNIQUEIDENTIFIER;
@@ -89,7 +90,7 @@ jobs:
             EXEC dbo.sp_add_job @job_name = N'$executionJobName', @enabled = 1, @description = N'Automated execution tracking for $projectName.', @start_step_id = 1;
             DECLARE @TargetServer NVARCHAR(128) = CAST(SERVERPROPERTY('ServerName') AS NVARCHAR(128));
             DECLARE @run_command NVARCHAR(MAX);
-            SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\TimesheetDevTestMigrationKPPK.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + @TargetServer + CHAR(34) + N' /Par ' + CHAR(34) + N'$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';
+            SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\Package.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + @TargetServer + CHAR(34) + N' /Par ' + CHAR(34) + N'$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';
             EXEC dbo.sp_add_jobstep @job_name = N'$executionJobName', @step_name = N'Execute SSIS Package', @subsystem = N'SSIS', @command = @run_command, @retry_attempts = 0;
             EXEC dbo.sp_add_jobserver @job_name = N'$executionJobName', @server_name = N'(local)';
             EXEC dbo.sp_add_jobschedule 
@@ -125,10 +126,11 @@ jobs:
             $connection.Close()
         }
  
-  # JOB 2: PRODUCTION DEPLOYMENT (PARTNER)
-
+  # =========================================================================
+  # JOB 2: DEPLOY TO PARTNER SERVER
+  # =========================================================================
   deploy-partner:
-    name: Production/Deploy
+    name: Production\deploy
     runs-on: windows-latest
     needs: deploy-local
     environment: partner-sql
@@ -163,7 +165,7 @@ jobs:
  
         $targetFolder     = "ETL"
         $projectName      = "ProjectTime"
-        $executionJobName = "RunTimesheetProductionMigrationPK"
+        $executionJobName = "Run_Timesheet_ETL_Job"
         # Partner specific configuration overrides
         $partnerServer    = "LAPTOP-7LSAQSR0"
  
@@ -201,11 +203,11 @@ jobs:
             DECLARE @project_stream VARBINARY(MAX) = $hexString;
             EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;
  
-            -- Environment parameter package fixes with targeted package rename targeting object scope 30
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''TimesheetDevTestMigrationKPPK.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.ServerName'', @parameter_value = N''$partnerServer'';
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''TimesheetDevTestMigrationKPPK.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.ServerName'', @parameter_value = N''$partnerServer'';
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''TimesheetDevTestMigrationKPPK.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.InitialCatalog'', @parameter_value = N''master'';
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''TimesheetDevTestMigrationKPPK.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.InitialCatalog'', @parameter_value = N''TimesheetDB1'';';
+            -- Environment parameter package fixes (Scope 30)
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''Package.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.ServerName'', @parameter_value = N''$partnerServer'';
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''Package.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.ServerName'', @parameter_value = N''$partnerServer'';
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''Package.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.InitialCatalog'', @parameter_value = N''master'';
+            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @object_name = N''Package.dtsx'', @parameter_name = N''CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.InitialCatalog'', @parameter_value = N''TimesheetDB1'';';
  
             EXEC dbo.sp_add_jobstep @job_name = N'GitHub_SSIS_Deploy_Job', @step_name = N'Run Deploy', @subsystem = N'TSQL', @command = @deploy_script, @retry_attempts = 0;
             EXEC dbo.sp_add_jobserver @job_name = N'GitHub_SSIS_Deploy_Job', @server_name = N'(local)';
@@ -232,7 +234,7 @@ jobs:
  
             DECLARE @TargetServer NVARCHAR(128) = CAST(SERVERPROPERTY('ServerName') AS NVARCHAR(128));
             DECLARE @run_command NVARCHAR(MAX);
-            SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\TimesheetDevTestMigrationKPPK.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + @TargetServer + CHAR(34) + N' /Par ' + CHAR(34) + N'$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';
+            SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\Package.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + @TargetServer + CHAR(34) + N' /Par ' + CHAR(34) + N'$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';
  
             EXEC dbo.sp_add_jobstep @job_name = N'$executionJobName', @step_name = N'Execute SSIS Package', @subsystem = N'SSIS', @command = @run_command, @retry_attempts = 0;
             EXEC dbo.sp_add_jobserver @job_name = N'$executionJobName', @server_name = N'(local)';
@@ -269,4 +271,4 @@ jobs:
             exit 1
         } finally {
             $connection.Close()
-        }
+        } 
