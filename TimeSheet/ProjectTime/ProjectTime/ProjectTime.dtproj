@@ -26,26 +26,26 @@
           <SSIS:Property SSIS:Name="CreatorComputerName">DESKTOP-DBA1BPB</SSIS:Property>
           <SSIS:Property SSIS:Name="Description">
           </SSIS:Property>
-          <SSIS:Property SSIS:Name="PasswordVerifier" SSIS:Sensitive="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAA1/T23C7e50+3F+0xii1BuAAAAAACAAAAAAAQZgAAAAEAACAAAABfahwOYWAvmVX9nOE2wozgHGwTyoJTZ5S9aN+JUTRIjgAAAAAOgAAAAAIAACAAAADqMr3cU8nOjzmxORbJoQyi8ksUxZjWZ9ACddR+Ywm5gJAAAAACm+y38DbwrbAPlFOASuRHXAyzZfmKHcSPtKTccWiP9CZ7ySvyyNJg+3CImXgif/WHtosrk+BeJWkjt6WrTjvr/efl5+qpC9L73wpidPgTTLpu3caS0btNrW8ZjwUX+WFrhR+q08spW2E7Tg2W5ckXcrEmXsZm3OHNylHihsn4jDKPyMdf0J1X5AmVGZoENzxAAAAAV1G4W/i5cBhglA8yBiiT616x0DNnBDeRGDE4uh+V80aqH786JJwW0vVKQlzZPUz7zZ3jMY3lsHDMZGAs8Z0wmA==</SSIS:Property>
+          <SSIS:Property SSIS:Name="PasswordVerifier" SSIS:Sensitive="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAA1/T23C7e50+3F+0xii1BuAAAAAACAAAAAAAQZgAAAAEAACAAAABABNto0nDZxeDWTwTMiQup/Zo6LB4zvndwdGACcUeMFAAAAAAOgAAAAAIAACAAAADCuTmxhJCDjHCfYaS/DGFMhEWtq+eJxBGQHdGdXj03wJAAAABXqEqZS8oEO4LcoD3eDyzk+Z55/NTw/VNFfLv27W7f52piSnkNc6BtemVYQOlsunogBsntxJ1lcShtNrmzViW75GzUjjHJ8ijztgipNO946E2mh1tl+07ywxkuscq0LXfctAjWdKZz4Xlrez6uRWU8TC2Lxdn+jE8c+tiQ6aEMopSN8hbF67o855NQWmnhEG1AAAAAJcQtdziJ3HTNLQipvYmPAugrXph0QTug1/weHaQtABzeW4APF1lOKHhHUTVLDGT7zt01OdzExHnq3a3fphZrfw==</SSIS:Property>
           <SSIS:Property SSIS:Name="FormatVersion">1</SSIS:Property>
         </SSIS:Properties>
         <SSIS:Packages>
-          <SSIS:Package SSIS:Name="Package.dtsx" SSIS:EntryPoint="1" />
+          <SSIS:Package SSIS:Name="TimesheetDevTestMigrationKPPK.dtsx" SSIS:EntryPoint="1" />
         </SSIS:Packages>
         <SSIS:ConnectionManagers />
         <SSIS:DeploymentInfo>
           <SSIS:ProjectConnectionParameters />
           <SSIS:PackageInfo>
-            <SSIS:PackageMetaData SSIS:Name="Package.dtsx">
+            <SSIS:PackageMetaData SSIS:Name="TimesheetDevTestMigrationKPPK.dtsx">
               <SSIS:Properties>
-                <SSIS:Property SSIS:Name="ID">{10D3E6F8-A42A-4828-A894-129A20788D48}</SSIS:Property>
-                <SSIS:Property SSIS:Name="Name">Package</SSIS:Property>
+                <SSIS:Property SSIS:Name="ID">{60F0AEB4-FB2F-4412-B616-6D22CAFA5D0D}</SSIS:Property>
+                <SSIS:Property SSIS:Name="Name">TimesheetDevTestMigrationKPPK</SSIS:Property>
                 <SSIS:Property SSIS:Name="VersionMajor">1</SSIS:Property>
                 <SSIS:Property SSIS:Name="VersionMinor">0</SSIS:Property>
-                <SSIS:Property SSIS:Name="VersionBuild">249</SSIS:Property>
+                <SSIS:Property SSIS:Name="VersionBuild">292</SSIS:Property>
                 <SSIS:Property SSIS:Name="VersionComments">
                 </SSIS:Property>
-                <SSIS:Property SSIS:Name="VersionGUID">{E6F35331-5AEF-4F60-9DBB-5545B0D85E45}</SSIS:Property>
+                <SSIS:Property SSIS:Name="VersionGUID">{26413DE0-53FE-413D-BC24-569BA065817D}</SSIS:Property>
                 <SSIS:Property SSIS:Name="PackageFormatVersion">8</SSIS:Property>
                 <SSIS:Property SSIS:Name="Description">
                 </SSIS:Property>
@@ -226,7 +226,7 @@
                     <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
                     <SSIS:Property SSIS:Name="Required">0</SSIS:Property>
                     <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
-                    <SSIS:Property SSIS:Name="Value">Data Source=DESKTOP-DBA1BPB\SQLSERVER2025;Initial Catalog=TimesheetDB1;Provider=SQLOLEDB.1;Integrated Security=SSPI;Application Name=SSIS-Package-{F6973623-8840-45BE-BDE7-396DC71F92C6}DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1;Auto Translate=False;</SSIS:Property>
+                    <SSIS:Property SSIS:Name="Value">Data Source=DESKTOP-DBA1BPB\SQLSERVER2025;Initial Catalog=TimesheetKPDB;Provider=SQLOLEDB.1;Integrated Security=SSPI;Auto Translate=False;Application Name=SSIS-Package-{F6973623-8840-45BE-BDE7-396DC71F92C6}DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1;</SSIS:Property>
                     <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
                   </SSIS:Properties>
                 </SSIS:Parameter>
@@ -286,7 +286,7 @@
                     <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
                     <SSIS:Property SSIS:Name="Required">0</SSIS:Property>
                     <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
-                    <SSIS:Property SSIS:Name="Value">TimesheetDB1</SSIS:Property>
+                    <SSIS:Property SSIS:Name="Value">TimesheetKPDB</SSIS:Property>
                     <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
                   </SSIS:Properties>
                 </SSIS:Parameter>
