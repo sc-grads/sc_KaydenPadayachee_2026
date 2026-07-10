@@ -66,7 +66,27 @@ jobs:
  
             EXEC dbo.sp_add_job @job_name = N'GitHub_SSIS_Deploy_Job', @enabled = 1, @start_step_id = 1;
             DECLARE @deploy_script NVARCHAR(MAX);
-            SET @deploy_script = N'USE [SSISDB]; IF NOT EXISTS (SELECT 1 FROM [catalog].[folders] WHERE name = ''$targetFolder'') BEGIN EXEC [catalog].[create_folder] @folder_name = N''$targetFolder''; END DECLARE @project_stream VARBINARY(MAX) = $hexString; EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;';
+            SET @deploy_script = N'USE [SSISDB]; 
+            IF NOT EXISTS (SELECT 1 FROM [catalog].[folders] WHERE name = ''$targetFolder'') 
+            BEGIN 
+                EXEC [catalog].[create_folder] @folder_name = N''$targetFolder''; 
+            END 
+            DECLARE @project_stream VARBINARY(MAX) = $hexString; 
+            EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;
+            -- LOCAL DIAGNOSTIC VERIFICATION CHECK
+            IF EXISTS (
+                SELECT 1
+                FROM SSISDB.catalog.projects p
+                JOIN SSISDB.catalog.folders f ON p.folder_id = f.folder_id
+                WHERE p.name = N''$projectName'' AND f.name = N''$targetFolder''
+            )
+            BEGIN
+                PRINT ''LOCAL PROJECT FOUND AND CONFIRMED IN SSISDB'';
+            END
+            ELSE
+            BEGIN
+                RAISERROR(''CRITICAL FAILURE: LOCAL PROJECT NOT DEPLOYED TO SSISDB'', 16, 1);
+            END';
             EXEC dbo.sp_add_jobstep @job_name = N'GitHub_SSIS_Deploy_Job', @step_name = N'Run Deploy', @subsystem = N'TSQL', @command = @deploy_script, @retry_attempts = 0;
             EXEC dbo.sp_add_jobserver @job_name = N'GitHub_SSIS_Deploy_Job', @server_name = N'(local)';
             DECLARE @deploy_job_id UNIQUEIDENTIFIER;
@@ -114,6 +134,8 @@ jobs:
  
             $command = $connection.CreateCommand()
             $command.CommandText = $sqlQuery
+            # INCREASE COMMAND TIMEOUT TO 5 MINUTES (300 seconds) TO PREVENT ADO.NET LOSS
+            $command.CommandTimeout = 300
             $command.ExecuteNonQuery() | Out-Null
  
             Write-Host "SUCCESS: Local SSIS Project deployed, job triggered, and execution delay finalized!"
@@ -202,7 +224,7 @@ jobs:
             DECLARE @project_stream VARBINARY(MAX) = $hexString;
             EXEC [catalog].[deploy_project] @folder_name = N''$targetFolder'', @project_name = N''$projectName'', @project_stream = @project_stream;
  
-            -- DIAGNOSTIC VERIFICATION CHECK
+            -- PARTNER DIAGNOSTIC VERIFICATION CHECK
             IF EXISTS (
                 SELECT 1
                 FROM SSISDB.catalog.projects p
@@ -210,11 +232,11 @@ jobs:
                 WHERE p.name = N''$projectName'' AND f.name = N''$targetFolder''
             )
             BEGIN
-                PRINT ''PROJECT FOUND AND CONFIRMED IN SSISDB'';
+                PRINT ''PARTNER PROJECT FOUND AND CONFIRMED IN SSISDB'';
             END
             ELSE
             BEGIN
-                RAISERROR(''CRITICAL FAILURE: PROJECT NOT DEPLOYED TO SSISDB'', 16, 1);
+                RAISERROR(''CRITICAL FAILURE: PARTNER PROJECT NOT DEPLOYED TO SSISDB'', 16, 1);
             END
  
             -- Environment parameter package fixes with targeted package rename targeting object scope 30
@@ -276,6 +298,8 @@ jobs:
  
             $command = $connection.CreateCommand()
             $command.CommandText = $sqlQuery
+            # INCREASE COMMAND TIMEOUT TO 5 MINUTES (300 seconds) TO PREVENT ADO.NET LOSS OVER THE TUNNEL
+            $command.CommandTimeout = 300
             $command.ExecuteNonQuery() | Out-Null
  
             Write-Host "SUCCESS: Partner deployment completed, configuration overrides applied, and task triggered!"
