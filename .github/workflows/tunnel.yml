@@ -81,7 +81,7 @@ jobs:
             BEGIN
                 WAITFOR DELAY '00:00:02';
             END
-            EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
+            --EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
             IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'$executionJobName')
             BEGIN
                 EXEC dbo.sp_delete_job @job_name = N'$executionJobName', @delete_unused_schedule=1;
@@ -223,7 +223,7 @@ jobs:
             BEGIN
                 WAITFOR DELAY '00:00:02';
             END
-            EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
+            --EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
  
             IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'$executionJobName')
             BEGIN
