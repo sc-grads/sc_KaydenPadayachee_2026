@@ -138,17 +138,11 @@ jobs:
         $dbUser        = "${{ secrets.DB_USER }}"
         $dbPassword    = "${{ secrets.DB_PASSWORD }}"
  
-        $targetFolder     = "ETL"
-        $projectName      = "ProjectTime"
-        $executionJobName = "RunTimesheetProductionMigrationPK"
-        # Partner specific configuration overrides
-        $partnerServer    = "LAPTOP-7LSAQSR0"
- 
         # STEP 3: CONVERT ISPAC FILE INTO BINARY DATA STREAM
         $fileBytes = [System.IO.File]::ReadAllBytes($ispacPath)
         $hexString = "0x" + [System.BitConverter]::ToString($fileBytes).Replace("-", "")
  
-        # STEP 4: INITIALIZE DIRECT SQL SERVER CONNECTION VIA TUNNEL
+        # STEP 4: INITIALIZE DIRECT TUNNEL CONNECTION TO PARTNER
         Write-Host "Establishing direct tunnel connection to partner environment..."
         $connStr = "Data Source=$tunnelAddress;Initial Catalog=SSISDB;User ID=$dbUser;Password=$dbPassword;TrustServerCertificate=True;Encrypt=False;"
         $connection = New-Object System.Data.SqlClient.SqlConnection($connStr)
@@ -156,51 +150,93 @@ jobs:
         try {
             $connection.Open()
  
+            # INTEGRATING YOUR SPECIFIED SQL SCRIPT DIRECTLY HERE
             $sqlQuery = @"
             SET NOCOUNT ON;
  
-            -- 1. Ensure folder exists in partner catalog
-            IF NOT EXISTS (SELECT 1 FROM [catalog].[folders] WHERE name = '$targetFolder')
+            USE SSISDB;
+ 
+            -- Create ETL Folder
+            IF NOT EXISTS
+            (
+                SELECT 1
+                FROM catalog.folders
+                WHERE name = N'ETL'
+            )
             BEGIN
-                EXEC [catalog].[create_folder] @folder_name = N'$targetFolder';
+                EXEC catalog.create_folder
+                    @folder_name = N'ETL';
             END
-            -- 2. Deploy binary stream directly to partner catalog
+ 
+            -- Deploy ISPAC
+            DECLARE @operation_id BIGINT;
             DECLARE @project_stream VARBINARY(MAX) = $hexString;
-            EXEC [catalog].[deploy_project] @folder_name = N'$targetFolder', @project_name = N'$projectName', @project_stream = @project_stream;
  
-            -- 3. Configure connection environment parameters 
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N'$targetFolder', @project_name = N'$projectName', @object_name = N'TimesheetDevTestMigrationKPPK.dtsx', @parameter_name = N'CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.ServerName', @parameter_value = N'$partnerServer';
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N'$targetFolder', @project_name = N'$projectName', @object_name = N'TimesheetDevTestMigrationKPPK.dtsx', @parameter_name = N'CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.ServerName', @parameter_value = N'$partnerServer';
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N'$targetFolder', @project_name = N'$projectName', @object_name = N'TimesheetDevTestMigrationKPPK.dtsx', @parameter_name = N'CM.DESKTOP-DBA1BPB\SQLSERVER2025.master1.InitialCatalog', @parameter_value = N'master';
-            EXEC SSISDB.catalog.set_object_parameter_value @object_type = 30, @folder_name = N'$targetFolder', @project_name = N'$projectName', @object_name = N'TimesheetDevTestMigrationKPPK.dtsx', @parameter_name = N'CM.DESKTOP-DBA1BPB\SQLSERVER2025.TimesheetDB1.InitialCatalog', @parameter_value = N'TimesheetDB1';
+            EXEC catalog.deploy_project
+                 @folder_name   = N'ETL',
+                 @project_name  = N'ProjectTime',
+                 @project_stream = @project_stream,
+                 @operation_id = @operation_id OUTPUT;
  
-            -- 4. Configure Partner SQL Agent Automation Job
-            USE [msdb];
-            IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'$executionJobName')
+            PRINT 'Deployment Operation ID: ' + CAST(@operation_id AS NVARCHAR(20));
+ 
+            -- Verify Project Exists
+            SELECT
+                p.name
+            FROM catalog.projects p
+            WHERE p.name = N'ProjectTime';
+ 
+            -- Switch to MSDB
+            USE msdb;
+ 
+            -- Remove Existing Job
+            IF EXISTS
+            (
+                SELECT 1
+                FROM dbo.sysjobs
+                WHERE name = N'RunTimesheetProductionMigrationPK'
+            )
             BEGIN
-                EXEC dbo.sp_delete_job @job_name = N'$executionJobName', @delete_unused_schedule=1;
+                EXEC dbo.sp_delete_job
+                     @job_name = N'RunTimesheetProductionMigrationPK',
+                     @delete_unused_schedule = 1;
             END
  
-            EXEC dbo.sp_add_job @job_name = N'$executionJobName', @enabled = 1, @description = N'Automated execution tracking for $projectName.', @start_step_id = 1;
+            -- Create Job
+            EXEC dbo.sp_add_job
+                 @job_name = N'RunTimesheetProductionMigrationPK',
+                 @enabled = 1,
+                 @description = N'Timesheet Production SSIS Execution';
  
-            DECLARE @TargetServer NVARCHAR(128) = CAST(SERVERPROPERTY('ServerName') AS NVARCHAR(128));
-            DECLARE @run_command NVARCHAR(MAX);
-            SET @run_command = N'/ISSERVER ' + CHAR(34) + N'\SSISDB\$targetFolder\$projectName\TimesheetDevTestMigrationKPPK.dtsx' + CHAR(34) + N' /SERVER ' + CHAR(34) + @TargetServer + CHAR(34) + N' /Par ' + CHAR(34) + N'`$ServerOption::LOGGING_LEVEL(Int16)' + CHAR(34) + N';1 /CALLERINFO SQLAGENT /REPORTING E';
+            -- Create Step
+            EXEC dbo.sp_add_jobstep
+                 @job_name = N'RunTimesheetProductionMigrationPK',
+                 @step_name = N'Execute SSIS Package',
+                 @subsystem = N'SSIS',
+                 @command =
+            N'/ISSERVER "\SSISDB\ETL\ProjectTime\TimesheetDevTestMigrationKPPK.dtsx"
+             /SERVER "' + CAST(SERVERPROPERTY('ServerName') AS NVARCHAR(128)) + N'"
+             /Par "$ServerOption::LOGGING_LEVEL(Int16)";1
+             /CALLERINFO SQLAGENT
+             /REPORTING E';
  
-            EXEC dbo.sp_add_jobstep @job_name = N'$executionJobName', @step_name = N'Execute SSIS Package', @subsystem = N'SSIS', @command = @run_command, @retry_attempts = 0;
-            EXEC dbo.sp_add_jobserver @job_name = N'$executionJobName', @server_name = N'(local)';
+            -- Attach Server
+            EXEC dbo.sp_add_jobserver
+                 @job_name = N'RunTimesheetProductionMigrationPK';
+ 
+            -- Schedule
             EXEC dbo.sp_add_jobschedule
-                @job_name = N'$executionJobName',
-                @name = N'Every_1_Minute_8AM_to_5PM',
-                @enabled = 1,
-                @freq_type = 4,
-                @freq_interval = 1,
-                @freq_subday_type = 4,
-                @freq_subday_interval = 1,
-                @active_start_time = 080000,
-                @active_end_time = 170000;
+                 @job_name = N'RunTimesheetProductionMigrationPK',
+                 @name = N'EveryMinute',
+                 @enabled = 1,
+                 @freq_type = 4,
+                 @freq_interval = 1,
+                 @freq_subday_type = 4,
+                 @freq_subday_interval = 1;
  
-            EXEC dbo.sp_start_job @job_name = N'$executionJobName';
+            -- Start Job
+            EXEC dbo.sp_start_job
+                 @job_name = N'RunTimesheetProductionMigrationPK';
         "@
  
             $command = $connection.CreateCommand()
@@ -208,10 +244,10 @@ jobs:
             $command.CommandTimeout = 300
             $command.ExecuteNonQuery() | Out-Null
  
-            Write-Host "SUCCESS: Partner direct deployment completed and overrides applied!"
+            Write-Host "SUCCESS: Partner deployment completed, configuration overrides applied, and task triggered!"
  
         } catch {
-            Write-Error "Partner Direct Deployment Failed: $_"
+            Write-Error "Partner Deployment Script Failed: $_"
             exit 1
         } finally {
             $connection.Close()
