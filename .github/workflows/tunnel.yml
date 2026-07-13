@@ -48,7 +48,7 @@ jobs:
         # STEP 4: INITIALIZE SQL SERVER DATABASE CONNECTION
         Write-Host "Establishing local tunnel connection..."
  
-        $connStr = "Data Source=$tunnelAddress;Initial Catalog=$initialDb;User ID=$dbUser;Password=$dbPassword;TrustServerCertificate=True;Encrypt=False;"
+        $connStr = "Data Source=$tunnelAddress;Initial Catalog=SSISDB;User ID=$dbUser;Password=$dbPassword;TrustServerCertificate=True;Encrypt=False;"
         $connection = New-Object System.Data.SqlClient.SqlConnection($connStr)
  
         try {
@@ -71,7 +71,7 @@ jobs:
             DECLARE @deploy_job_id UNIQUEIDENTIFIER;
             SELECT @deploy_job_id = job_id FROM msdb.dbo.sysjobs WHERE name = N'GitHub_SSIS_Deploy_Job';
             EXEC dbo.sp_start_job @job_name = N'GitHub_SSIS_Deploy_Job';
-            # Dynamic Polling Loop: Safely wait for deployment execution to complete
+            -- Dynamic Polling Loop: Safely wait for deployment execution to complete
             WHILE EXISTS (
                 SELECT 1 FROM msdb.dbo.sysjobactivity
                 WHERE job_id = @deploy_job_id AND start_execution_date IS NOT NULL AND stop_execution_date IS NULL
@@ -79,7 +79,7 @@ jobs:
             BEGIN
                 WAITFOR DELAY '00:00:02';
             END
-            #EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
+            -- EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
             IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'$executionJobName')
             BEGIN
                 EXEC dbo.sp_delete_job @job_name = N'$executionJobName', @delete_unused_schedule=1;
@@ -221,7 +221,7 @@ jobs:
             BEGIN
                 WAITFOR DELAY '00:00:02';
             END
-            #EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
+            -- EXEC dbo.sp_delete_job @job_name = N'GitHub_SSIS_Deploy_Job';
  
             IF EXISTS (SELECT job_id FROM msdb.dbo.sysjobs WHERE name = N'$executionJobName')
             BEGIN
