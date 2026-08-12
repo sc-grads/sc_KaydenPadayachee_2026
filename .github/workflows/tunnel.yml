@@ -1,4 +1,4 @@
-name: Deploy SSIS via Pinggy Tunnel
+name: Timesheet Automation
  
 on:
   push:
@@ -9,7 +9,7 @@ jobs:
   # JOB 1: DEPLOY TO LOCAL LAPTOP
   # =========================================================================
   deploy-local:
-    name: Tunnel Deployment to Local Laptop
+    name: DevTest/Deploy
     runs-on: windows-latest
     environment: local-sql
  
@@ -128,7 +128,7 @@ jobs:
   # JOB 2: DEPLOY TO PARTNER SERVER
   # =========================================================================
   deploy-partner:
-    name: 2. Deploy to Partner Server
+    name: 2. Production/Deploy
     runs-on: windows-latest
     needs: deploy-local
     environment: partner-sql

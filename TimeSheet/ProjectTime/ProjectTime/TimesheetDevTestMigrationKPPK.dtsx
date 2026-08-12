@@ -12,8 +12,8 @@
   DTS:LocaleID="7177"
   DTS:ObjectName="TimesheetDevTestMigrationKPPK"
   DTS:PackageType="5"
-  DTS:VersionBuild="293"
-  DTS:VersionGUID="{477A1788-8CC6-4212-AB30-2775F3239DC7}">
+  DTS:VersionBuild="296"
+  DTS:VersionGUID="{091B5945-500A-4D62-B1DA-873EDED06908}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:ConnectionManagers>
@@ -192,12 +192,12 @@
       DTS:CreationName=""
       DTS:DTSID="{0E202FBD-EB4B-4934-B40F-F3C3BA396DE0}"
       DTS:EvaluateAsExpression="True"
-      DTS:Expression="&quot;SELECT * FROM [&quot; + &#xA;((FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;march&quot;, 1) &gt; 0) ? &quot;Mar&quot; : &#xA;((FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;april&quot;, 1) &gt; 0) ? &quot;Apr&quot; : &#xA;  ((FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;may&quot;, 1) &gt; 0) ? &quot;May&quot; : &quot;Apr&quot;))) &#xA;+ &quot;$A8:Z]&quot;"
+      DTS:Expression="&quot;SELECT * FROM [&quot; + &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;march&quot;, 1) &gt; 0 ? &quot;Mar&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;april&quot;, 1) &gt; 0 ? &quot;Apr&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;may&quot;, 1) &gt; 0 ? &quot;May&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;june&quot;, 1) &gt; 0 ? &quot;Jun&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;july&quot;, 1) &gt; 0 ? &quot;Jul&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;august&quot;, 1) &gt; 0 ? &quot;Aug&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;september&quot;, 1) &gt; 0 ? &quot;Sep&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;october&quot;, 1) &gt; 0 ? &quot;Oct&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;november&quot;, 1) &gt; 0 ? &quot;Nov&quot; : &#xA;(FINDSTRING(LOWER(@[User::CurrentFilePath]), &quot;december&quot;, 1) &gt; 0 ? &quot;Dec&quot; : &quot;UnknownMonth&quot;))))))))))&#xA;+ &quot;$A8:Z]&quot;"
       DTS:IncludeInDebugDump="2345"
       DTS:Namespace="User"
       DTS:ObjectName="SheetName">
       <DTS:VariableValue
-        DTS:DataType="8">SELECT * FROM [Apr$A8:Z]</DTS:VariableValue>
+        DTS:DataType="8">SELECT * FROM [UnknownMonth$A8:Z]</DTS:VariableValue>
     </DTS:Variable>
   </DTS:Variables>
   <DTS:Executables>
@@ -1242,14 +1242,35 @@
               ReadOnlyVariables="User::CurrentFilePath,User::SheetName"
               ReadWriteVariables="User::ExtractedEmployeeName,User::ExtractedFileName">
               <ProjectItem
-                Name="Properties\Settings.settings"
-                Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
-<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
-  <Profiles>
-    <Profile Name="(Default)" />
-  </Profiles>
-  <Settings />
-</SettingsFile>]]></ProjectItem>
+                Name="Properties\AssemblyInfo.cs"
+                Encoding="UTF8"><![CDATA[using System.Reflection;
+using System.Runtime.CompilerServices;
+
+//
+// General Information about an assembly is controlled through the following 
+// set of attributes. Change these attribute values to modify the information
+// associated with an assembly.
+//
+[assembly: AssemblyTitle("ST_269e80e4cedd42058df596db3c025822")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("ST_269e80e4cedd42058df596db3c025822")]
+[assembly: AssemblyCopyright("Copyright @  2026")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+//
+// Version information for an assembly consists of the following four values:
+//
+//      Major Version
+//      Minor Version 
+//      Build Number
+//      Revision
+//
+// You can specify all the values or you can default the Revision and Build Numbers 
+// by using the '*' as shown below:
+
+[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
               <ProjectItem
                 Name="Properties\Resources.resx"
                 Encoding="UTF8"><![CDATA[<?xml version="1.0" encoding="utf-8"?>
@@ -1635,35 +1656,14 @@ namespace ST_269e80e4cedd42058df596db3c025822.Properties {
     }
 }]]></ProjectItem>
               <ProjectItem
-                Name="Properties\AssemblyInfo.cs"
-                Encoding="UTF8"><![CDATA[using System.Reflection;
-using System.Runtime.CompilerServices;
-
-//
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-//
-[assembly: AssemblyTitle("ST_269e80e4cedd42058df596db3c025822")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ST_269e80e4cedd42058df596db3c025822")]
-[assembly: AssemblyCopyright("Copyright @  2026")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
-//
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Revision and Build Numbers 
-// by using the '*' as shown below:
-
-[assembly: AssemblyVersion("1.0.*")]]]></ProjectItem>
+                Name="Properties\Settings.settings"
+                Encoding="UTF8"><![CDATA[<?xml version='1.0' encoding='iso-8859-1'?>
+<SettingsFile xmlns="uri:settings" CurrentProfile="(Default)">
+  <Profiles>
+    <Profile Name="(Default)" />
+  </Profiles>
+  <Settings />
+</SettingsFile>]]></ProjectItem>
               <ProjectItem
                 Name="Properties\Resources.Designer.cs"
                 Encoding="UTF8"><![CDATA[//------------------------------------------------------------------------------
