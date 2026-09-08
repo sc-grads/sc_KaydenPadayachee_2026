@@ -1,4 +1,8 @@
 flask
 flask-smorest
 python-dotenv
-marshmallow
+sqlalchemy
+flask-sqlalchemy
+Flask-JWT-Extended
+flask-jwt-extended
+passlib
