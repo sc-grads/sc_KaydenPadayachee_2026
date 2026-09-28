@@ -1,0 +1,13 @@
+2026-09-28 09:08:17,304 - INFO - APPLICATION_STARTED | MorningRun backend started
+2026-09-28 09:08:22,956 - INFO - APPLICATION_STARTED | MorningRun backend started
+2026-09-28 09:09:41,014 - INFO - USER_REGISTERED | Email: Hail@gmail.com | Role: customer
+2026-09-28 09:09:58,255 - WARNING - USER_LOGIN_FAILED | Email: Hailey@gmail.com
+2026-09-28 09:10:05,334 - WARNING - USER_LOGIN_FAILED | Email: Hailey@gmail.com
+2026-09-28 09:10:09,654 - WARNING - USER_LOGIN_FAILED | Email: Hailey@gmail.com
+2026-09-28 09:10:12,928 - INFO - SECURITY_QUESTION_REQUESTED | Email: Hailey@gmail.com
+2026-09-28 09:10:19,835 - WARNING - SECURITY_ANSWER_FAILED | User ID: 3
+2026-09-28 09:11:03,995 - INFO - USER_REGISTERED | Email: Hailey2@gmail.com | Role: customer
+2026-09-28 09:11:30,711 - INFO - USER_LOGIN | Email: Hailey2@gmail.com | Role: customer
+2026-09-28 10:59:30,249 - INFO - APPLICATION_STARTED | MorningRun backend started
+2026-09-28 10:59:33,017 - INFO - APPLICATION_STARTED | MorningRun backend started
+2026-09-28 11:20:28,277 - INFO - USER_LOGIN | Email: Hailey2@gmail.com | Role: customer
